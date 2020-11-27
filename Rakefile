@@ -4,3 +4,7 @@
 require_relative 'config/application'
 
 Rails.application.load_tasks
+
+task :query do
+	puts ENV['IP_CARDANO_GRAPHQL_API_SERVER']
+end
