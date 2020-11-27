@@ -40,7 +40,7 @@ task :query do
 	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
 	  http.request(request)
 	end
-
+	binding.pry
 	# puts response.code
 	obj = JSON.parse(response.body)
 	puts obj['data']['activeStake'][0]
