@@ -6,6 +6,15 @@ require_relative 'config/application'
 Rails.application.load_tasks
 
 task :query => :environment do
+	#rake query "{ activeStake { address amount epochNo registeredWith { id } }}"
+	ARGV.each { |a| task a.to_sym do ; end }
+	query_string = ARGV[1]
+
+	obj = query_graphql(query_string)
+	puts obj['data']['activeStake'][0]
+end
+
+def query_graphql(query) 
 	require 'net/http'
 	require 'uri'
 	require 'json'
@@ -19,17 +28,7 @@ task :query => :environment do
 	request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
 
 
-	activeStake = {"query":
-		"{ activeStake {
-		    address
-		    amount
-				epochNo
-		  	registeredWith {
-		      id
-		    }
-			} 
-		}"
-	}
+	activeStake = {"query": query}
 
 	request.body = JSON.dump(activeStake)
 
@@ -40,8 +39,6 @@ task :query => :environment do
 	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
 	  http.request(request)
 	end
-	binding.pry
 	# puts response.code
-	obj = JSON.parse(response.body)
-	puts obj['data']['activeStake'][0]
+	JSON.parse(response.body)		
 end
