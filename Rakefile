@@ -18,7 +18,6 @@ task :query_stakes => :environment do
 	ARGV.each { |a| task a.to_sym do ; end }
 	epochNo = ARGV[1].to_i
 	epochNo = last_epoch() if epochNo == 0
-	binding.pry
 
 	obj = query_graphql("{ activeStake(where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
 	obj = obj['activeStake']
@@ -26,7 +25,8 @@ task :query_stakes => :environment do
 		stake = ActiveStake.find_or_create_by(
 			address: stake_hash['address']
 		)
-		stake.save
+		stake.amount = stake_hash['amount']
+		stake.epochno = stake_hash['epochNo']
 	end
 end
 
