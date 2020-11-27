@@ -6,10 +6,11 @@ require_relative 'config/application'
 Rails.application.load_tasks
 
 task :query => :environment do
-	#rake query "{ activeStake { address amount epochNo registeredWith { id } }}"
 	ARGV.each { |a| task a.to_sym do ; end }
 	query_string = ARGV[1]
-
+	#rake query "{stakePools(offset: 1000) {id rewardAddress fixedCost margin pledge}}"
+	#rake query "{ activeStake { address amount epochNo registeredWith { id } }}"
+	#rake query "{blocks(offset: 0) {epochNo}}"
 	obj = query_graphql(query_string)
 	puts obj['data']['activeStake'][0]
 end
@@ -18,21 +19,35 @@ task :query_stakes => :environment do
 	ARGV.each { |a| task a.to_sym do ; end }
 	epochNo = ARGV[1].to_i
 	epochNo = last_epoch() if epochNo == 0
+	
+	stakeTotNo = stake_aggregate(epochNo)
+	step = 500
+	mod = stakeTotNo % step
+	count = 0
 
-	obj = query_graphql("{ activeStake(where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
-	obj = obj['activeStake']
-	obj.each do |stake_hash|
-		stake = ActiveStake.find_or_create_by(
-			address: stake_hash['address']
-		)
-		stake.amount = stake_hash['amount']
-		stake.epochno = stake_hash['epochNo']
+	until count > (stakeTotNo - step - mod) do
+		obj = query_graphql("{ activeStake(limit: #{step}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+		obj = obj['activeStake']
+		puts "#{obj.count} processing... total made #{count} / #{stakeTotNo}"
+		obj.each do |stake_hash|
+			stake = ActiveStake.find_or_create_by(
+				address: stake_hash['address']
+			)
+			stake.amount = stake_hash['amount']
+			stake.epochno = stake_hash['epochNo']
+		end
+		count += step
 	end
 end
 
 def last_epoch()
 	# query_graphql("{blocks(limit: 1, offset: 3, order_by:{ forgedAt: desc}) {epochNo}}")
 	query_graphql("{blocks(limit: 1, order_by:{ forgedAt: desc}) {epochNo}}")['blocks'].first['epochNo']
+end
+
+def stake_aggregate(epochNo)
+	res = query_graphql("{activeStake_aggregate(where: {epochNo: {_eq: #{epochNo}}}) {aggregate {count}}}")
+	res = res["activeStake_aggregate"]["aggregate"]["count"].to_i
 end
 
 def query_graphql(query)
