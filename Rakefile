@@ -15,15 +15,27 @@ task :query => :environment do
 end
 
 task :query_stakes => :environment do
-	obj = query_graphql("{ activeStake { address amount epochNo registeredWith { id } }}")['activeStake']
+	ARGV.each { |a| task a.to_sym do ; end }
+	epochNo = ARGV[1].to_i
+	epochNo = last_epoch() if epochNo == 0
+	binding.pry
+
+	obj = query_graphql("{ activeStake(where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+	obj = obj['activeStake']
 	obj.each do |stake_hash|
-		stake = ActiveStake.new(address: stake_hash['address'])
+		stake = ActiveStake.find_or_create_by(
+			address: stake_hash['address']
+		)
 		stake.save
-		binding.pry
 	end
 end
 
-def query_graphql(query) 
+def last_epoch()
+	# query_graphql("{blocks(limit: 1, offset: 3, order_by:{ forgedAt: desc}) {epochNo}}")
+	query_graphql("{blocks(limit: 1, order_by:{ forgedAt: desc}) {epochNo}}")['blocks'].first['epochNo']
+end
+
+def query_graphql(query)
 	require 'net/http'
 	require 'uri'
 	require 'json'
@@ -36,10 +48,9 @@ def query_graphql(query)
 	request["Dnt"] = "1"
 	request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
 
+	obj = {"query": query}
 
-	activeStake = {"query": query}
-
-	request.body = JSON.dump(activeStake)
+	request.body = JSON.dump(obj)
 
 	req_options = {
 	  use_ssl: uri.scheme == "https",
