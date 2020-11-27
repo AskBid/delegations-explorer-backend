@@ -5,7 +5,7 @@ require_relative 'config/application'
 
 Rails.application.load_tasks
 
-task :query do
+task :query => :environment do
 	require 'net/http'
 	require 'uri'
 	require 'json'
