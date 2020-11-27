@@ -14,6 +14,15 @@ task :query => :environment do
 	puts obj['data']['activeStake'][0]
 end
 
+task :query_stakes => :environment do
+	obj = query_graphql("{ activeStake { address amount epochNo registeredWith { id } }}")['activeStake']
+	obj.each do |stake_hash|
+		stake = ActiveStake.new(address: stake_hash['address'])
+		stake.save
+		binding.pry
+	end
+end
+
 def query_graphql(query) 
 	require 'net/http'
 	require 'uri'
@@ -40,5 +49,5 @@ def query_graphql(query)
 	  http.request(request)
 	end
 	# puts response.code
-	JSON.parse(response.body)		
+	JSON.parse(response.body)['data']	
 end
