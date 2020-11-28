@@ -25,21 +25,32 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 	mod = stakeTotNo % step
 	count = 0
 	processed = 0
+	exist = 0
+	created = 0
 
 	until count > (stakeTotNo - mod) do
-		obj = query_graphql("{ activeStake(limit: #{step}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+		obj = query_graphql("{ activeStake(limit: #{step+5}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
 		obj = obj['activeStake']
-
+		
+		puts "-------------------------------------------"
 		puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
 		puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 		processed += obj.count
 
 		obj.each do |stake_hash|
-			stake = ActiveStake.find_or_create_by(address: stake_hash['address'])
+			stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'])
+			if stake.persisted?
+				exist += 1
+			else
+				created += 1
+			end
 			stake.amount = stake_hash['amount']
 			stake.epochno = stake_hash['epochNo']
-			stake.save
+			puts '!!!not saved!' if !stake.save
 		end
+		puts "#{exist} activeStakes were updated"
+		puts "#{created} activeStakes were created New"
+		puts "-------------------------------------------"
 		count += step
 	end
 end
