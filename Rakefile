@@ -15,7 +15,7 @@ task :query => :environment do
 	puts obj['data']['activeStake'][0]
 end
 
-task :query_stakes => :environment do
+task :getActiveStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	epochNo = ARGV[1].to_i
 	epochNo = last_epoch() if epochNo == 0
@@ -24,17 +24,21 @@ task :query_stakes => :environment do
 	step = 500
 	mod = stakeTotNo % step
 	count = 0
+	processed = 0
 
-	until count > (stakeTotNo - step - mod) do
+	until count > (stakeTotNo - mod) do
 		obj = query_graphql("{ activeStake(limit: #{step}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
 		obj = obj['activeStake']
-		puts "#{obj.count} processing... total made #{count} / #{stakeTotNo}"
+
+		puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
+		puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
+		processed += obj.count
+
 		obj.each do |stake_hash|
-			stake = ActiveStake.find_or_create_by(
-				address: stake_hash['address']
-			)
+			stake = ActiveStake.find_or_create_by(address: stake_hash['address'])
 			stake.amount = stake_hash['amount']
 			stake.epochno = stake_hash['epochNo']
+			stake.save
 		end
 		count += step
 	end
