@@ -36,7 +36,8 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 				obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
 				success = true
 			rescue
-				puts 'there was an error during query_graphql()'
+				puts 'there was an error during query_graphql().'
+				puts 'query_graphql() will be'
 			end
 		end
 		obj = obj['activeStake']
@@ -47,14 +48,13 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 		processed += obj.count
 
 		obj.each do |stake_hash|
-			stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'])
+			stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'], epochno: stake_hash['epochNo'])
 			if stake.persisted?
 				exist += 1
 			else
 				created += 1
 			end
 			stake.amount = stake_hash['amount']
-			stake.epochno = stake_hash['epochNo']
 			puts '!!!not saved!' if !stake.save
 		end
 		puts "#{exist} activeStakes were updated"
