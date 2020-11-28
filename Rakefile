@@ -25,13 +25,22 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 	mod = stakeTotNo % step
 	count = 0
 	processed = 0
-	exist = 0
-	created = 0
 
 	until count > (stakeTotNo - mod) do
-		obj = query_graphql("{ activeStake(limit: #{step+5}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+		exist = 0
+		created = 0
+		success = false
+
+		until success do
+			begin
+				obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+				success = true
+			rescue
+				puts 'there was an error during query_graphql()'
+			end
+		end
 		obj = obj['activeStake']
-		
+
 		puts "-------------------------------------------"
 		puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
 		puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
