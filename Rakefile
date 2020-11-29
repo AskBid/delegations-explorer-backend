@@ -5,7 +5,8 @@ require_relative 'config/application'
 
 Rails.application.load_tasks
 
-
+require 'net/http'
+require 'net/https'
 
 task :getPools => :environment do #per epochNo (as argument)
 	"{stakePools { id hash pledge margin rewardAddress updatedIn url { block { epochNo }}}}"
@@ -48,6 +49,31 @@ task :getPools => :environment do #per epochNo (as argument)
 	end
 end
 
+
+
+task :getAllPoolTickers => :environment do
+	Pool.all.each do |pool|
+		ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
+		# ticker = read_pool_url_json(pool.url)
+		pool.ticker = ticker if ticker
+		pool.save
+		puts pool.ticker
+	end
+end
+
+task :getMissingPoolTickers => :environment do
+	Pool.all.each do |pool|
+		if !pool.ticker
+			ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
+			# ticker = read_pool_url_json(pool.url)
+			pool.ticker = ticker if ticker
+			pool.save
+			puts pool.ticker
+		else
+			puts "`#{pool.ticker}"
+		end
+	end
+end
 
 
 
