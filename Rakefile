@@ -18,49 +18,41 @@ end
 task :getPools => :environment do #per epochNo (as argument)
 
 	"{stakePools { id hash pledge margin rewardAddress updatedIn url { block { epochNo }}}}"
-	binding.pry
-	stakeTotNo = pools_aggregate_count()
+
+	aggregate_count = pools_aggregate_count()
 	step = 500
-	mod = stakeTotNo % step
+	mod = aggregate_count % step
 	count = 0
 	processed = 0
 
-	# until count > (stakeTotNo - mod) do
-	# 	exist = 0
-	# 	created = 0
-	# 	success = false
+	until count > (aggregate_count - mod) do
+		success = false
 
-	# 	until success do
-	# 		begin
-	# 			obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
-	# 			success = true
-	# 		rescue
-	# 			puts 'there was an error during query_graphql().'
-	# 			puts 'query_graphql() will be'
-	# 		end
-	# 	end
-	# 	obj = obj['activeStake']
+		until success do
+			begin
+				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { address amount epochNo registeredWith { id } }}")
+				success = true
+			rescue
+				puts 'there was an error during query_graphql().'
+				puts 'query_graphql() will be rexecuted'
+			end
+		end
+		obj = obj['stakePools']
 
-	# 	puts "-------------------------------------------"
-	# 	puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
-	# 	puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
-	# 	processed += obj.count
+		puts "-------------------------------------------"
+		puts "processing #{obj.count} stakePools offset from the #{count}th stakePool ..."
+		puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
+		processed += obj.count
 
-	# 	obj.each do |stake_hash|
-	# 		stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'], epochno: stake_hash['epochNo'])
-	# 		if stake.persisted?
-	# 			exist += 1
-	# 		else
-	# 			created += 1
-	# 		end
-	# 		stake.amount = stake_hash['amount']
-	# 		puts '!!!not saved!' if !stake.save
-	# 	end
-	# 	puts "#{exist} activeStakes were updated"
-	# 	puts "#{created} activeStakes were created New"
-	# 	puts "-------------------------------------------"
-	# 	count += step
-	# end
+		obj.each do |hash|
+			pool = Pool.find_or_initialize_by(id: hash['id'])
+
+			pool.hash = hash['hash']
+			puts '!!!not saved!' if !pool.save
+		end
+		puts "-------------------------------------------"
+		count += step
+	end
 end
 
 task :getActiveStakes => :environment do #per epochNo (as argument)
@@ -85,7 +77,7 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 				success = true
 			rescue
 				puts 'there was an error during query_graphql().'
-				puts 'query_graphql() will be'
+				puts 'query_graphql() will be rexecuted'
 			end
 		end
 		obj = obj['activeStake']
