@@ -41,12 +41,12 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
-			puts "-------------------------------------------"
 			puts '!!!not saved!' if !pool.save
 		end
 		puts "-------------------------------------------"
 		count += step
 	end
+	puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 end
 
 
@@ -124,6 +124,7 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 		puts "-------------------------------------------"
 		count += step
 	end
+	puts "total made: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 end
 
 
