@@ -30,7 +30,7 @@ task :getPools => :environment do #per epochNo (as argument)
 
 		until success do
 			begin
-				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { address amount epochNo registeredWith { id } }}")
+				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { id hash pledge margin rewardAddress updatedIn { block { epochNo }} url}}")
 				success = true
 			rescue
 				puts 'there was an error during query_graphql().'
@@ -44,10 +44,12 @@ task :getPools => :environment do #per epochNo (as argument)
 		puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 		processed += obj.count
 
-		obj.each do |hash|
-			pool = Pool.find_or_initialize_by(id: hash['id'])
+		obj.each do |pool_hash|
+			pool = Pool.find_or_initialize_by(poolid: pool_hash['id'])
 
-			pool.hash = hash['hash']
+			pool.hashid = pool_hash['hash']
+			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
+			pool.url = pool_hash['url']
 			puts '!!!not saved!' if !pool.save
 		end
 		puts "-------------------------------------------"
