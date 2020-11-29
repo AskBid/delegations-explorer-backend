@@ -51,7 +51,7 @@ end
 
 
 
-task :getAllPoolTickers => :environment do
+task :getAllTickers => :environment do
 	Pool.all.each do |pool|
 		ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
 		# ticker = read_pool_url_json(pool.url)
@@ -61,7 +61,7 @@ task :getAllPoolTickers => :environment do
 	end
 end
 
-task :getMissingPoolTickers => :environment do
+task :getMissingTickers => :environment do
 	Pool.all.each do |pool|
 		if !pool.ticker
 			ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
