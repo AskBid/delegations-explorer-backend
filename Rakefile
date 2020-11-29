@@ -5,16 +5,6 @@ require_relative 'config/application'
 
 Rails.application.load_tasks
 
-task :query => :environment do
-	ARGV.each { |a| task a.to_sym do ; end }
-	query_string = ARGV[1]
-	#rake query "{stakePools(offset: 1000) {id rewardAddress fixedCost margin pledge}}"
-	#rake query "{ activeStake { address amount epochNo registeredWith { id } }}"
-	#rake query "{blocks(offset: 0) {epochNo}}"
-	obj = query_graphql(query_string)
-	puts obj['data']['activeStake'][0]
-end
-
 task :getPools => :environment do #per epochNo (as argument)
 
 	"{stakePools { id hash pledge margin rewardAddress updatedIn url { block { epochNo }}}}"
