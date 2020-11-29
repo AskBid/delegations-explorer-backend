@@ -5,10 +5,10 @@ require_relative 'config/application'
 
 Rails.application.load_tasks
 
+
+
 task :getPools => :environment do #per epochNo (as argument)
-
 	"{stakePools { id hash pledge margin rewardAddress updatedIn url { block { epochNo }}}}"
-
 	aggregate_count = pools_aggregate_count()
 	step = 500
 	mod = aggregate_count % step
@@ -40,13 +40,16 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
-			read_pool_url(pool_hash['url'])
+			puts "-------------------------------------------"
 			puts '!!!not saved!' if !pool.save
 		end
 		puts "-------------------------------------------"
 		count += step
 	end
 end
+
+
+
 
 task :getActiveStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
@@ -97,20 +100,28 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 	end
 end
 
+
+
 def last_epoch()
 	# query_graphql("{blocks(limit: 1, offset: 3, order_by:{ forgedAt: desc}) {epochNo}}")
 	query_graphql("{blocks(limit: 1, order_by:{ forgedAt: desc}) {epochNo}}")['blocks'].first['epochNo']
 end
+
+
 
 def stake_aggregate(epochNo)
 	res = query_graphql("{activeStake_aggregate(where: {epochNo: {_eq: #{epochNo}}}) {aggregate {count}}}")
 	res = res["activeStake_aggregate"]["aggregate"]["count"].to_i
 end
 
+
+
 def pools_aggregate_count()
 	res = query_graphql("{stakePools_aggregate { aggregate {count}}}")
 	res = res["stakePools_aggregate"]["aggregate"]["count"].to_i
 end
+
+
 
 def query_graphql(query)
 	require 'net/http'
@@ -140,8 +151,33 @@ def query_graphql(query)
 	JSON.parse(response.body)['data']	
 end
 
-def read_pool_url(url)
-	resp = Net::HTTP.get_response(URI.parse(url))
-	data = resp.body
-	JSON.parse(data)
+
+
+def read_ticker_from_adapoolsDOTorg(hashid)
+	begin
+		resp = Net::HTTP.get_response(URI.parse("https://adapools.org/pool/#{hashid}"))
+		data = resp.body
+		return data.split("data-id=\"#{hashid}\"")[1].split(']')[0].split('[')[1]
+	rescue
+		return nil
+	end
+end
+
+
+
+def read_pool_url_json(url)
+	begin
+		resp = Net::HTTP.get_response(URI.parse(url))
+		data = resp.body
+		begin 
+			return JSON.parse(data)
+		rescue
+			puts "this url:                   #{url}"
+			url = "#{data.split('<a href="')[1].split('">')[0]}"
+			puts "was modified into this url: #{url}"
+			read_pool_url(url)
+		end
+	rescue
+		return false
+	end
 end
