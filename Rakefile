@@ -40,6 +40,7 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
+			read_pool_url(pool_hash['url'])
 			puts '!!!not saved!' if !pool.save
 		end
 		puts "-------------------------------------------"
@@ -137,4 +138,10 @@ def query_graphql(query)
 	end
 	# puts response.code
 	JSON.parse(response.body)['data']	
+end
+
+def read_pool_url(url)
+	resp = Net::HTTP.get_response(URI.parse(url))
+	data = resp.body
+	JSON.parse(data)
 end
