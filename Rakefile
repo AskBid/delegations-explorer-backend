@@ -110,16 +110,10 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 
 		obj.each do |stake_hash|
 			stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'], epochno: stake_hash['epochNo'])
-			if stake.persisted?
-				exist += 1
-			else
-				created += 1
-			end
 			stake.amount = stake_hash['amount']
+			stake.pool = Pool.find_by_or_initialize_by(poolid: stake_hash['registeredWith']['id'])
 			puts '!!!not saved!' if !stake.save
 		end
-		puts "#{exist} activeStakes were updated"
-		puts "#{created} activeStakes were created New"
 		puts "-------------------------------------------"
 		count += step
 	end
