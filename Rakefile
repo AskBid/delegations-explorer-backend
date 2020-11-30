@@ -8,6 +8,8 @@ Rails.application.load_tasks
 require 'net/http'
 require 'net/https'
 
+
+
 task :getPools => :environment do #per epochNo (as argument)
 	aggregate_count = pools_aggregate_count()
 	step = 500
@@ -50,17 +52,7 @@ end
 
 
 
-task :getAllTickers => :environment do
-	Pool.all.each do |pool|
-		ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
-		# ticker = read_pool_url_json(pool.url)
-		pool.ticker = ticker if ticker
-		pool.save
-		puts pool.ticker
-	end
-end
-
-task :getMissingTickers => :environment do
+task :getTickers => :environment do
 	Pool.all.each do |pool|
 		if !pool.ticker
 			ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
@@ -236,9 +228,15 @@ def read_ticker_from_adapoolsDOTorg(hashid)
 	begin
 		resp = Net::HTTP.get_response(URI.parse("https://adapools.org/pool/#{hashid}"))
 		data = resp.body
-		return data.split("data-id=\"#{hashid}\"")[1].split(']')[0].split('[')[1]
+		puts "https://adapools.org/pool/#{hashid}"
+		res = data.split("data-id=\"#{hashid}\"")[1].split(']')[0].split('[')[1]
+		if res.length > 2 && res.length < 6
+			return res
+		else 
+			return hashid.slice(0,6)
+		end
 	rescue
-		return nil
+		return hashid.slice(0,6)
 	end
 end
 
