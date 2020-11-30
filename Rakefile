@@ -9,7 +9,6 @@ require 'net/http'
 require 'net/https'
 
 task :getPools => :environment do #per epochNo (as argument)
-	"{stakePools { id hash pledge margin rewardAddress updatedIn url { block { epochNo }}}}"
 	aggregate_count = pools_aggregate_count()
 	step = 500
 	mod = aggregate_count % step
@@ -82,7 +81,7 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 	epochNo = ARGV[1].to_i
 	epochNo = last_epoch() if epochNo == 0
 	
-	stakeTotNo = stake_aggregate(epochNo)
+	stakeTotNo = stake_aggregate_count(epochNo)
 	step = 500
 	mod = stakeTotNo % step
 	count = 0
@@ -129,6 +128,58 @@ end
 
 
 
+task :getRewards => :environment do #per epochNo (as argument)
+	ARGV.each { |a| task a.to_sym do ; end }
+	epochNo = ARGV[1].to_i
+	epochNo = last_epoch() if epochNo == 0
+	
+	aggregate_count = rewards_aggregate_count(epochNo)
+
+	if aggregate_count != 0
+		step = 500
+		mod = aggregate_count % step
+		count = 0
+		processed = 0
+
+		until count > (aggregate_count - mod) do
+			success = false
+
+			until success do
+				begin
+					obj = query_graphql("{rewards( limit: #{step}, order_by: {stakePool: {id: asc}}, offset: #{count}, where: { earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}) { address earnedIn { number } amount }}")
+					success = true
+				rescue
+					puts 'there was an error during query_graphql().'
+					puts 'query_graphql() will be rexecuted'
+				end
+			end
+			obj = obj['rewards']
+			if obj.empty?
+				puts "no rewards have been given yet for epoch #{}"
+			end
+
+			puts "-------------------------------------------"
+			puts "processing #{obj.count} rewards offset from the #{count}th rewards ..."
+			puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
+			processed += obj.count
+
+			obj.each do |reward_hash|
+				stake = ActiveStake.find_by(address: reward_hash['address'], epochno: reward_hash['earnedIn']['number'])
+
+				stake.rewards = reward_hash['amount'] if stake
+				puts "!!!not saved!, are there activeStake for epoch #{epochNo}?" if !stake || !stake.save 
+			end
+			puts "-------------------------------------------"
+			count += step
+		end
+		puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
+	else
+		puts "no rewards have been given yet for epoch #{epochNo}"
+	end
+end
+
+
+
 def last_epoch()
 	# query_graphql("{blocks(limit: 1, offset: 3, order_by:{ forgedAt: desc}) {epochNo}}")
 	query_graphql("{blocks(limit: 1, order_by:{ forgedAt: desc}) {epochNo}}")['blocks'].first['epochNo']
@@ -136,9 +187,16 @@ end
 
 
 
-def stake_aggregate(epochNo)
+def stake_aggregate_count(epochNo)
 	res = query_graphql("{activeStake_aggregate(where: {epochNo: {_eq: #{epochNo}}}) {aggregate {count}}}")
 	res = res["activeStake_aggregate"]["aggregate"]["count"].to_i
+end
+
+
+
+def rewards_aggregate_count(epochNo)
+	res = query_graphql("{rewards_aggregate(where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}) {aggregate {count}}}")
+	res = res["rewards_aggregate"]["aggregate"]["count"].to_i
 end
 
 
