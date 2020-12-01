@@ -1,0 +1,2 @@
+class Stake < ApplicationRecord
+end
