@@ -81,11 +81,9 @@ task :getStakes => :environment do #per epochNo (as argument)
 		step = 500
 		mod = stakeTotNo % step
 		count = 0
-		processed = 0
+		processed = 0 + count
 
 		until count > (stakeTotNo - mod) do
-			exist = 0
-			created = 0
 			success = false
 
 			until success do
@@ -106,8 +104,8 @@ task :getStakes => :environment do #per epochNo (as argument)
 
 			obj.each do |stake_hash|
 				stake = Stake.find_or_create_by(address: stake_hash['address'])
-				stake.active_stakes.build(epochno: stake_hash['epochNo'], amount: stake_hash['amount'])
-				stake.active_stakes.last.pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
+				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
+				stake.active_stakes.build(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id)
 				puts '!!!not saved!' if !stake.save
 			end
 			count += step
@@ -133,7 +131,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 			step = 500
 			mod = aggregate_count % step
 			count = 0
-			processed = 0
+			processed = 0 + count
 
 			until count > (aggregate_count - mod) do
 				success = false
