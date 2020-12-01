@@ -72,11 +72,10 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 	args = [last_epoch()] if args.empty?
-	
+
 	args.each do |arg|
 		puts "::::::::::::::::::::::::::::::::::::::::::"
 		epochNo = arg
-		epochNo = last_epoch() if epochNo == 0
 		
 		stakeTotNo = stake_aggregate_count(epochNo)
 		step = 500
@@ -106,9 +105,10 @@ task :getActiveStakes => :environment do #per epochNo (as argument)
 			processed += obj.count
 
 			obj.each do |stake_hash|
-				stake = ActiveStake.find_or_initialize_by(address: stake_hash['address'], epochno: stake_hash['epochNo'])
-				stake.amount = stake_hash['amount']
-				stake.pool = Pool.find_or_initialize_by(poolid: stake_hash['registeredWith']['id'])
+				stake = Stake.find_or_create_by(address: stake_hash['address'])
+				stake.active_stakes.build(epochno: stake_hash['epochNo'], amount: stake_hash['amount'])
+				stake.active_stakes.last.pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
+				binding.pry
 				puts '!!!not saved!' if !stake.save
 			end
 			puts "-------------------------------------------"
