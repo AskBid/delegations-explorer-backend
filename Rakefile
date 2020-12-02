@@ -84,17 +84,9 @@ task :getStakes => :environment do #per epochNo (as argument)
 		processed = 0 + count
 
 		until count > (stakeTotNo - mod) do
-			success = false
 
-			until success do
-				begin
-					obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
-					success = true
-				rescue
-					puts 'there was an error during query_graphql().'
-					puts 'query_graphql() will be rexecuted'
-				end
-			end
+			obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
+
 			obj = obj['activeStake']
 
 			puts "-------------------------------------------"
@@ -134,17 +126,9 @@ task :getRewards => :environment do #per epochNo (as argument)
 			processed = 0 + count
 
 			until count > (aggregate_count - mod) do
-				success = false
 
-				until success do
-					begin
-						obj = query_graphql("{rewards( limit: #{step}, order_by: {stakePool: {id: asc}}, offset: #{count}, where: { earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}) { address earnedIn { number } amount }}")
-						success = true
-					rescue
-						puts 'there was an error during query_graphql().'
-						puts 'query_graphql() will be rexecuted'
-					end
-				end
+				obj = query_graphql("{rewards( limit: #{step}, order_by: {stakePool: {id: asc}}, offset: #{count}, where: { earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}) { address earnedIn { number } amount }}")
+
 				obj = obj['rewards']
 				if obj.empty?
 					puts "no rewards have been given yet for epoch #{}"
@@ -205,28 +189,44 @@ def query_graphql(query)
 	require 'net/http'
 	require 'uri'
 	require 'json'
+	success = false
 
-	uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100/")
-	request = Net::HTTP::Post.new(uri)
-	request.content_type = "application/json"
-	request["Accept"] = "application/json"
-	request["Connection"] = "keep-alive"
-	request["Dnt"] = "1"
-	request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
+	until success do
+		begin
+			puts 'querying graphql server (#query_graphql)'
+			puts query
+			uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100/")
+			request = Net::HTTP::Post.new(uri)
+		  # request.read_timeout = 5
 
-	obj = {"query": query}
+			request.content_type = "application/json"
+			request["Accept"] = "application/json"
+			request["Connection"] = "keep-alive"
+			request["Dnt"] = "1"
+			request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
 
-	request.body = JSON.dump(obj)
+			obj = {"query": query}
 
-	req_options = {
-	  use_ssl: uri.scheme == "https",
-	}
+			request.body = JSON.dump(obj)
 
-	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-	  http.request(request)
+			req_options = {
+			  use_ssl: uri.scheme == "https",
+			  read_timeout: 5
+			}
+
+			response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+			  http.request(request)
+			end
+			# puts response.code
+			return JSON.parse(response.body)['data']
+			raise ErrorClass 
+		rescue ErrorClass => error 
+			puts error
+			puts 'there was an error during query_graphql().'
+			puts 'query_graphql() will be rexecuted again'
+			puts ''
+		end
 	end
-	# puts response.code
-	JSON.parse(response.body)['data']	
 end
 
 
