@@ -109,6 +109,7 @@ end
 
 
 task :getRewards => :environment do #per epochNo (as argument)
+	binding.pry
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 	args = [last_epoch()] if args.empty?
@@ -189,44 +190,33 @@ def query_graphql(query)
 	require 'net/http'
 	require 'uri'
 	require 'json'
-	success = false
 
-	until success do
-		begin
-			puts 'querying graphql server (#query_graphql)'
-			puts query
-			uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100/")
-			request = Net::HTTP::Post.new(uri)
-		  # request.read_timeout = 5
+	puts 'querying graphql server (inside #query_graphql)'
+	puts "query: #{query}"
+	uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100")
+	request = Net::HTTP::Post.new(uri)
+  # request.read_timeout = 5
 
-			request.content_type = "application/json"
-			request["Accept"] = "application/json"
-			request["Connection"] = "keep-alive"
-			request["Dnt"] = "1"
-			request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
+	request.content_type = "application/json"
+	request["Accept"] = "application/json"
+	request["Connection"] = "keep-alive"
+	request["Dnt"] = "1"
+	request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
 
-			obj = {"query": query}
+	obj = {"query": query}
 
-			request.body = JSON.dump(obj)
+	request.body = JSON.dump(obj)
 
-			req_options = {
-			  use_ssl: uri.scheme == "https",
-			  read_timeout: 5
-			}
+	req_options = {
+	  use_ssl: uri.scheme == "https",
+	  read_timeout: 5
+	}
 
-			response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-			  http.request(request)
-			end
-			# puts response.code
-			return JSON.parse(response.body)['data']
-			raise ErrorClass 
-		rescue ErrorClass => error 
-			puts error
-			puts 'there was an error during query_graphql().'
-			puts 'query_graphql() will be rexecuted again'
-			puts ''
-		end
+	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+	  http.request(request)
 	end
+	puts response.code
+	JSON.parse(response.body)['data']
 end
 
 
