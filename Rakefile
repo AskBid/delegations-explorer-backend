@@ -109,7 +109,6 @@ end
 
 
 task :getRewards => :environment do #per epochNo (as argument)
-	binding.pry
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 	args = [last_epoch()] if args.empty?
@@ -128,7 +127,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 			until count > (aggregate_count - mod) do
 
-				obj = query_graphql("{rewards( limit: #{step}, order_by: {stakePool: {id: asc}}, offset: #{count}, where: { earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}) { address earnedIn { number } amount }}")
+				obj = query_graphql("{rewards(limit: #{step},order_by: {address: {_eq: \"stake\"}},offset: #{count},where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}){ address earnedIn { number } amount }}")
 
 				obj = obj['rewards']
 				if obj.empty?
@@ -142,7 +141,12 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 				obj.each do |reward_hash|
 					stake = Stake.find_by(address: reward_hash['address'])
-					activeStake= stake.active_stakes.find_by(epochno: reward_hash['earnedIn']['number'])
+					if !stake
+						puts "#{reward_hash['address']} was not found." 
+						puts "creating stake"
+					end
+
+					activeStake = stake ? stake.active_stakes.find_by(epochno: reward_hash['earnedIn']['number']) : nil
 
 					activeStake.rewards = reward_hash['amount'] if stake
 					puts "!!!not saved!, are there activeStake for epoch #{epochNo}?" if !stake || !stake.save 
@@ -215,7 +219,8 @@ def query_graphql(query)
 	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
 	  http.request(request)
 	end
-	puts response.code
+	puts "API response code: #{response.code}"
+	puts ""
 	JSON.parse(response.body)['data']
 end
 
