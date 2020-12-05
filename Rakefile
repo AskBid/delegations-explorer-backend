@@ -95,10 +95,15 @@ task :getStakes => :environment do #per epochNo (as argument)
 			processed += obj.count
 
 			obj.each do |stake_hash|
-				stake = Stake.find_or_create_by(address: stake_hash['address'])
+				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
 				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
-				stake.active_stakes.build(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id)
-				puts '!!!not saved!' if !stake.save
+				as = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
+				if !as.save
+					puts "!!!there was already an entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
+				end
+				if stake.persisted?
+					puts "!!!#{stake.address} not saved!, already exist?" if !stake.save
+				end
 			end
 			count += step
 		end
