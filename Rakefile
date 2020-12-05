@@ -144,11 +144,14 @@ task :getRewards => :environment do #per epochNo (as argument)
 					if !stake
 						puts "#{reward_hash['address']} was not found." 
 						puts "creating stake"
+						# stake = Stake.create(address: stake_hash['address'])
 					end
 
-					activeStake = stake ? stake.active_stakes.find_by(epochno: reward_hash['earnedIn']['number']) : nil
+					if stake
+						activeStake = stake.active_stakes.find_or_create_by(epochno: reward_hash['earnedIn']['number'])
+						activeStake.rewards = reward_hash['amount']
+					end
 
-					activeStake.rewards = reward_hash['amount'] if stake
 					puts "!!!not saved!, are there activeStake for epoch #{epochNo}?" if !stake || !stake.save 
 				end
 				count += step
