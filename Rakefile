@@ -94,15 +94,18 @@ task :getStakes => :environment do #per epochNo (as argument)
 			puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 			processed += obj.count
 
-			obj.each do |stake_hash|
+			obj.each.with_index do |stake_hash, i|
 				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
+				print "stake #{stake.address} #{count + i + 1}"
+				print "\r"
 				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
-				as = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
-				if !as.save
-					puts "!!!there was already an entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
-				end
-				if stake.persisted?
+				if !stake.persisted?
 					puts "!!!#{stake.address} not saved!, already exist?" if !stake.save
+				end				
+				activeStake = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
+				if !activeStake.save
+					puts "!!!there was already an entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
+					puts activeStake.errors.messages
 				end
 			end
 			count += step
@@ -144,17 +147,19 @@ task :getRewards => :environment do #per epochNo (as argument)
 				puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 				processed += obj.count
 
-				obj.each do |reward_hash|
+				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
+					print "reward for stake #{stake.address} #{count + i + 1} "
+					
 					if !stake
-						puts "#{reward_hash['address']} was not found." 
-						puts "creating stake"
-						# stake = Stake.create(address: stake_hash['address'])
+						puts "#{reward_hash['address']} was not found."
 					end
 
 					if stake
 						activeStake = stake.active_stakes.find_or_create_by(epochno: reward_hash['earnedIn']['number'])
 						activeStake.rewards = reward_hash['amount']
+						print "rewards added: #{activeStake.rewards}"
+						print "\r"
 					end
 
 					puts "!!!not saved!, are there activeStake for epoch #{epochNo}?" if !stake || !stake.save 
