@@ -36,21 +36,23 @@ task :getPools => :environment do #per epochNo (as argument)
 		puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 		processed += obj.count
 
-		obj.each do |pool_hash|
+		obj.each.with_index do |pool_hash, i|
+			print "pool processed: #{pool_hash['id']} #{count + i + 1}"
+			print "\r"
 			pool = Pool.find_or_initialize_by(poolid: pool_hash['id'])
 
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
 			if pool.save
-				Owner.create(address: pool_hash['rewardAddress'], pool_id: pool.id)
+				Owner.find_or_create_by(address: pool_hash['rewardAddress'], pool_id: pool.id)
 			else
-				puts '!!!not saved!'
+				puts "!!!not saved! #{pool_hash['id']}"
 			end
 		end
-		puts "-------------------------------------------"
 		count += step
 	end
+	puts ""
 	puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_12_01_185355) do
+ActiveRecord::Schema.define(version: 2020_12_06_114119) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -23,6 +23,13 @@ ActiveRecord::Schema.define(version: 2020_12_01_185355) do
     t.string "rewards"
     t.integer "pool_id"
     t.integer "stake_id"
+  end
+
+  create_table "owners", force: :cascade do |t|
+    t.string "address"
+    t.integer "pool_id"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "pools", force: :cascade do |t|
