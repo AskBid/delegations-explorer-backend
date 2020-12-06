@@ -22,7 +22,7 @@ task :getPools => :environment do #per epochNo (as argument)
 
 		until success do
 			begin
-				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { id hash pledge margin rewardAddress updatedIn { block { epochNo }} url}}")
+				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { id hash pledge margin rewardAddress updatedIn { block { epochNo }} url }}")
 				success = true
 			rescue
 				puts 'there was an error during query_graphql().'
@@ -42,7 +42,11 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
-			puts '!!!not saved!' if !pool.save
+			if pool.save
+				Owner.create(address: pool_hash['rewardAddress'], pool_id: pool.id)
+			else
+				puts '!!!not saved!'
+			end
 		end
 		puts "-------------------------------------------"
 		count += step
@@ -156,6 +160,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 					stake = Stake.find_by(address: reward_hash['address'])
 					
 					if !stake
+						puts ''
 						puts "#{reward_hash['address']} was not found."
 					else
 						print "reward for stake #{stake.address} #{count + i + 1} "
@@ -169,6 +174,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 					end
 					if !stake || !stake.save 
 						puts "!!!not saved!, are there activeStake for epoch #{epochNo}?"
+					end
 				end
 				puts ''
 				count += step
@@ -216,6 +222,7 @@ def query_graphql(query)
 	require 'uri'
 	require 'json'
 
+	puts '$ ...'
 	puts 'querying graphql server (inside #query_graphql)'
 	puts "query: #{query}"
 	uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100")
