@@ -45,7 +45,12 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
 			pool.url = pool_hash['url']
 			if pool.save
+				#this is necessary as owner addresses are not always in active_stakes
 				Owner.find_or_create_by(address: pool_hash['rewardAddress'], pool_id: pool.id)
+				stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
+				if !stake.persisted?
+					puts "!!!#{stake.address} not saved!" if !stake.save
+				end				
 			else
 				puts "!!!not saved! #{pool_hash['id']}"
 			end
@@ -77,6 +82,11 @@ end
 task :getStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
+	count = 0
+	if args[-1].include?('offset:')
+		count = args[-1].gsub('offset:', '').to_i
+		args = args.slice(0, args.length - 1 )
+	end
 	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
@@ -87,7 +97,6 @@ task :getStakes => :environment do #per epochNo (as argument)
 		stakeTotNo = stake_aggregate_count(epochNo)
 		step = 500
 		mod = stakeTotNo % step
-		count = 0
 		processed = 0 + count
 
 		until count > (stakeTotNo - mod) do
@@ -129,6 +138,11 @@ end
 task :getRewards => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
+	count = 0
+	if args[-1].include?('offset:')
+		count = args[-1].gsub('offset:', '').to_i
+		args = args.slice(0, args.length - 1 )
+	end
 	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
@@ -141,7 +155,6 @@ task :getRewards => :environment do #per epochNo (as argument)
 		if aggregate_count != 0
 			step = 500
 			mod = aggregate_count % step
-			count = 0
 			processed = 0 + count
 
 			until count > (aggregate_count - mod) do
@@ -156,37 +169,43 @@ task :getRewards => :environment do #per epochNo (as argument)
 				puts "-------------------------------------------"
 				puts "processing #{obj.count} rewards offset from the #{count}th rewards ..."
 				puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
-				processed += obj.count
 
 				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
 					
 					if !stake
-						puts ''
-						puts "#{reward_hash['address']} was not found."
+						puts "> ! > ! > #{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address reward_hash['address'] in local database"
+						puts ""
 					else
-						print "reward for stake #{stake.address} #{count + i + 1} "
+						print "goint to add rewards for the #{count + i + 1}th address, "
 					end
 
 					if stake
 						activeStake = stake.active_stakes.find_or_create_by(epochno: reward_hash['earnedIn']['number'])
 						activeStake.rewards = reward_hash['amount']
-						print "rewards added: #{activeStake.rewards}"
+						print "rewards added."
 						print "\r"
+					else
+						puts "stake address found but reward not added for #{reward_hash['address']}"
 					end
-					if !stake || !stake.save 
-						puts "!!!not saved!, are there activeStake for epoch #{epochNo}?"
+
+					if (!stake || !stake.save)
+						puts "!!!stake not saved! are there activeStake for epoch #{epochNo}? or maybe owner_stake was found above?"
+						puts ""
+					else
+						processed += 1
 					end
 				end
 				puts ''
 				count += step
 			end
+			puts ""
 			puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 		else
 			puts "no rewards have been given yet for epoch #{epochNo}"
 		end
 		finish = Time.now
-		puts "time to process: #{(finish - start)/60} minutes to complete #{arg} epoch"
+		puts "time to process: #{(finish - start)/60} minutes to complete epoch #{arg}"
 	end
 end
 
@@ -224,6 +243,7 @@ def query_graphql(query)
 	require 'uri'
 	require 'json'
 
+	puts ''
 	puts '$ ...'
 	puts 'querying graphql server (inside #query_graphql)'
 	puts "query: #{query}"
