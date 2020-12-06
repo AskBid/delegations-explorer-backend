@@ -74,6 +74,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
+		start = Time.now
 		puts "::::::::::::::::::::::::::::::::::::::::::"
 		epochNo = arg
 		
@@ -84,12 +85,12 @@ task :getStakes => :environment do #per epochNo (as argument)
 		processed = 0 + count
 
 		until count > (stakeTotNo - mod) do
+			puts "-------------------------------------------"
 
 			obj = query_graphql("{ activeStake(limit: #{step}, order_by: {address: asc}, offset: #{count}, where: {epochNo: {_eq: #{epochNo}}}) { address amount epochNo registeredWith { id } }}")
 
 			obj = obj['activeStake']
 
-			puts "-------------------------------------------"
 			puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
 			puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 			processed += obj.count
@@ -108,9 +109,12 @@ task :getStakes => :environment do #per epochNo (as argument)
 					puts activeStake.errors.messages
 				end
 			end
+			puts ''
 			count += step
 		end
 		puts "total made: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
+		finish = Time.now
+		puts "time to process: #{(finish - start)/60} minutes to complete #{arg} epoch"
 	end
 end
 
@@ -122,6 +126,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
+		start = Time.now
 		puts "::::::::::::::::::::::::::::::::::::::::::"
 		epochNo = arg
 	
@@ -149,10 +154,11 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
-					print "reward for stake #{stake.address} #{count + i + 1} "
 					
 					if !stake
 						puts "#{reward_hash['address']} was not found."
+					else
+						print "reward for stake #{stake.address} #{count + i + 1} "
 					end
 
 					if stake
@@ -161,22 +167,24 @@ task :getRewards => :environment do #per epochNo (as argument)
 						print "rewards added: #{activeStake.rewards}"
 						print "\r"
 					end
-
-					puts "!!!not saved!, are there activeStake for epoch #{epochNo}?" if !stake || !stake.save 
+					if !stake || !stake.save 
+						puts "!!!not saved!, are there activeStake for epoch #{epochNo}?"
 				end
+				puts ''
 				count += step
 			end
 			puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 		else
 			puts "no rewards have been given yet for epoch #{epochNo}"
 		end
+		finish = Time.now
+		puts "time to process: #{(finish - start)/60} minutes to complete #{arg} epoch"
 	end
 end
 
 
 
 def last_epoch()
-	# query_graphql("{blocks(limit: 1, offset: 3, order_by:{ forgedAt: desc}) {epochNo}}")
 	query_graphql("{blocks(limit: 1, order_by:{ forgedAt: desc}) {epochNo}}")['blocks'].first['epochNo']
 end
 
