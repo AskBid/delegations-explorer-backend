@@ -118,7 +118,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 		epochNo = arg
 		
 		stakeTotNo = stake_aggregate_count(epochNo)
-		step = 500
+		step = 2000
 		mod = stakeTotNo % step
 		processed = 0 + count
 
@@ -176,7 +176,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 		aggregate_count = rewards_aggregate_count(epochNo)
 
 		if aggregate_count != 0
-			step = 500
+			step = 2000
 			mod = aggregate_count % step
 			processed = 0 + count
 
@@ -272,35 +272,43 @@ def query_graphql(query)
 	require 'uri'
 	require 'json'
 
-	puts ''
-	puts '$ ...'
-	puts 'querying graphql server (inside #query_graphql)'
-	puts "query: #{query}"
-	uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100")
-	request = Net::HTTP::Post.new(uri)
-  # request.read_timeout = 5
+	attempts = 0
 
-	request.content_type = "application/json"
-	request["Accept"] = "application/json"
-	request["Connection"] = "keep-alive"
-	request["Dnt"] = "1"
-	request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
+	begin
+		puts ''
+		puts '$ ...'
+		puts 'querying graphql server (inside #query_graphql)'
+		puts "query: #{query}"
+		uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100")
+		request = Net::HTTP::Post.new(uri)
+	  # request.read_timeout = 5
 
-	obj = {"query": query}
+		request.content_type = "application/json"
+		request["Accept"] = "application/json"
+		request["Connection"] = "keep-alive"
+		request["Dnt"] = "1"
+		request["Origin"] = "http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100"
 
-	request.body = JSON.dump(obj)
+		obj = {"query": query}
 
-	req_options = {
-	  use_ssl: uri.scheme == "https",
-	  read_timeout: 5
-	}
+		request.body = JSON.dump(obj)
 
-	response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-	  http.request(request)
+		req_options = {
+		  use_ssl: uri.scheme == "https",
+		  read_timeout: 15
+		}
+
+		response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
+		  http.request(request)
+		end
+		puts "API response code: #{response.code}"
+		puts ""
+		JSON.parse(response.body)['data']
+	rescue
+		attempt += 1
+		puts "retrying #query_graphql because it failed #{attempt} times"
+		query_graphql(query)
 	end
-	puts "API response code: #{response.code}"
-	puts ""
-	JSON.parse(response.body)['data']
 end
 
 
