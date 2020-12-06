@@ -9,6 +9,26 @@ require 'net/http'
 require 'net/https'
 
 
+task :epochStartProcedure => [:getPools, :getStakes, :getRewards] do
+	ARGV.each { |a| task a.to_sym do ; end }
+	args = ARGV.slice(1,ARGV.length)
+
+	Rake::Task[:getPools]
+	total = 0
+
+	args.each do |arg|
+		start = Time.now
+		Rake::Task[:getStakes].invoke(arg)
+		Rake::Task[:getRewards].invoke(arg)
+		finish = Time.now
+		minutes = ((finish - start)/60).to_i
+		total += minutes
+		puts "time to process: #{minutes} minutes to complete epoch #{arg}"
+	end
+	puts "TOTAL time to process: #{total} minutes to complete epochs #{args}"
+end
+
+
 
 task :getPools => :environment do #per epochNo (as argument)
 	aggregate_count = pools_aggregate_count()
@@ -37,9 +57,10 @@ task :getPools => :environment do #per epochNo (as argument)
 		processed += obj.count
 
 		obj.each.with_index do |pool_hash, i|
-			print "pool processed: #{pool_hash['id']} #{count + i + 1}"
+			print "pools processed: #{count + i + 1}"
 			print "\r"
 			pool = Pool.find_or_initialize_by(poolid: pool_hash['id'])
+			puts "\n> ! > ! > #{pool_hash['url']} :NEW POOL!" if !pool.persisted?
 
 			pool.hashid = pool_hash['hash']
 			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
@@ -112,7 +133,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 
 			obj.each.with_index do |stake_hash, i|
 				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
-				print "stake #{stake.address} #{count + i + 1}"
+				print "stakes proccessed: #{count + i + 1}"
 				print "\r"
 				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
 				if !stake.persisted?
@@ -120,7 +141,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 				end				
 				activeStake = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
 				if !activeStake.save
-					puts "!!!there was already an entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
+					puts "!!!there was already an activeStake entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
 					puts activeStake.errors.messages
 				end
 			end
@@ -129,7 +150,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 		end
 		puts "total made: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 		finish = Time.now
-		puts "time to process: #{(finish - start)/60} minutes to complete #{arg} epoch"
+		puts "time to process: #{((finish - start)/60).to_i} minutes to complete epoch #{arg}"
 	end
 end
 
@@ -159,11 +180,11 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 			until count > (aggregate_count - mod) do
 
-				obj = query_graphql("{rewards(limit: #{step},order_by: {address: {_eq: \"stake\"}},offset: #{count},where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}){ address earnedIn { number } amount }}")
+				obj = query_graphql("{rewards(limit: #{step},order_by: {address: {_eq: \"stake\"}},offset: #{count},where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}){ address earnedIn { number } amount stakePool{id}}}")
 
 				obj = obj['rewards']
 				if obj.empty?
-					puts "no rewards have been given yet for epoch #{}"
+					puts "no rewards have been given yet for epoch #{epochNo}"
 				end
 
 				puts "-------------------------------------------"
@@ -172,7 +193,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
-					
+
 					if !stake
 						puts "> ! > ! > #{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address reward_hash['address'] in local database"
 						puts ""
@@ -183,6 +204,10 @@ task :getRewards => :environment do #per epochNo (as argument)
 					if stake
 						activeStake = stake.active_stakes.find_or_create_by(epochno: reward_hash['earnedIn']['number'])
 						activeStake.rewards = reward_hash['amount']
+						if !activeStake.pool_id
+							pool = Pool.find_by(poolid: reward_hash['stakePool']['id'])
+							activeStake.pool_id = pool.id
+						end
 						print "rewards added."
 						print "\r"
 					else
@@ -191,6 +216,8 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 					if (!stake || !stake.save)
 						puts "!!!stake not saved! are there activeStake for epoch #{epochNo}? or maybe owner_stake was found above?"
+						puts "#{stake.errors.message}" if stake
+						puts "processed: #{processed} (offset: #{processed} to examine)"
 						puts ""
 					else
 						processed += 1
@@ -205,7 +232,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 			puts "no rewards have been given yet for epoch #{epochNo}"
 		end
 		finish = Time.now
-		puts "time to process: #{(finish - start)/60} minutes to complete epoch #{arg}"
+		puts "time to process: #{((finish - start)/60).to_i} minutes to complete epoch #{arg}"
 	end
 end
 
