@@ -13,19 +13,47 @@ task :epochStartProcedure => [:getPools, :getStakes, :getRewards] do
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 
+	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
+	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	start0 = Time.now
 	Rake::Task[:getPools]
-	total = 0
+	finish0 = Time.now
+	total = ((finish0 - start0)/60).to_i
 
 	args.each do |arg|
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::         Task Shift         :::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::     get_STAKES starting    :::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 		start = Time.now
 		Rake::Task[:getStakes].invoke(arg)
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::         Task Shift          ::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::     get_REWARDS starting    ::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 		Rake::Task[:getRewards].invoke(arg)
 		finish = Time.now
 		minutes = ((finish - start)/60).to_i
 		total += minutes
 		puts "time to process: #{minutes} minutes to complete epoch #{arg}"
+		puts "TOTAL time since start: #{total} minutes"
+		puts ""
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::         EPOCH END           ::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts "::::::::::::::::       epoch #{arg} ended       ::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 	end
-	puts "TOTAL time to process: #{total} minutes to complete epochs #{args}"
+	puts "TOTAL FINAL time to process: #{total} minutes to complete epochs #{args}"
 end
 
 
@@ -137,10 +165,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
 				print "stakes proccessed: #{count + i + 1}"
 				print "\r"
-				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])
-				if !stake.persisted?
-					puts "!!!#{stake.address} not saved!, already exist?" if !stake.save
-				end				
+				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])			
 				activeStake = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
 				if !activeStake.save
 					puts "!!!there was already an activeStake entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
@@ -216,7 +241,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 						puts "stake address found but reward not added for #{reward_hash['address']}"
 					end
 
-					if (!stake || !stake.save)
+					if (!stake.save) #before was (!stake) and erlier (!stake || !stake.save)
 						puts "!!!stake not saved! are there activeStake for epoch #{epochNo}? or maybe owner_stake was found above?"
 						puts "#{stake.errors.message}" if stake
 						puts "processed: #{processed} (offset: #{processed} to examine)"
