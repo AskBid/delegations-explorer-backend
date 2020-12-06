@@ -67,7 +67,9 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.url = pool_hash['url']
 			if pool.save
 				#this is necessary as owner addresses are not always in active_stakes
-				Owner.find_or_create_by(address: pool_hash['rewardAddress'], pool_id: pool.id)
+				owner = Owner.find_or_create_by(address: pool_hash['rewardAddress'])
+				owner.pool_id = pool.id
+				owner.save
 				stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
 				if !stake.persisted?
 					puts "!!!#{stake.address} not saved!" if !stake.save
