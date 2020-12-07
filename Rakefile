@@ -9,7 +9,7 @@ require 'net/http'
 require 'net/https'
 
 
-task :epochStartProcedure => [:getPools, :getStakes, :getRewards] do
+task :epochStartProcedure do
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 
@@ -17,7 +17,7 @@ task :epochStartProcedure => [:getPools, :getStakes, :getRewards] do
 	puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
 	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
 	start0 = Time.now
-	Rake::Task[:getPools]
+	Rake::Task[:getPools].invoke()
 	finish0 = Time.now
 	total = ((finish0 - start0)/60).to_i
 
@@ -160,16 +160,18 @@ task :getStakes => :environment do #per epochNo (as argument)
 			puts "processing #{obj.count} stakes for epochNo #{epochNo} offset from the #{count}th stake ..."
 			puts "total made so far: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
 			processed += obj.count
+			errors = 0
 
 			obj.each.with_index do |stake_hash, i|
 				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
+				stake.save
 				print "stakes proccessed: #{count + i + 1}"
 				print "\r"
 				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])			
 				activeStake = ActiveStake.new(epochno: stake_hash['epochNo'], amount: stake_hash['amount'], pool_id: pool.id, stake_id: stake.id)
 				if !activeStake.save
-					puts "!!!there was already an activeStake entry for stake #{stake.address} in epochNo #{stake_hash['epochNo']}"
-					puts activeStake.errors.messages
+					errors += 1
+					print "                                 error#{errors}: #{activeStake.errors.messages}  ||  "
 				end
 			end
 			puts ''
@@ -222,14 +224,16 @@ task :getRewards => :environment do #per epochNo (as argument)
 					stake = Stake.find_by(address: reward_hash['address'])
 
 					if !stake
-						puts "> ! > ! > #{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address reward_hash['address'] in local database"
+						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
+						puts " #{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address #{reward_hash['address']} in local database"
+						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
 						puts ""
 					else
 						print "goint to add rewards for the #{count + i + 1}th address, "
 					end
-
+					
 					if stake
-						activeStake = stake.active_stakes.find_or_create_by(epochno: reward_hash['earnedIn']['number'])
+						activeStake = ActiveStake.find_or_create_by(epochno: reward_hash['earnedIn']['number'], stake_id: stake.id)
 						activeStake.rewards = reward_hash['amount']
 						if !activeStake.pool_id
 							pool = Pool.find_by(poolid: reward_hash['stakePool']['id'])
@@ -238,14 +242,13 @@ task :getRewards => :environment do #per epochNo (as argument)
 						print "rewards added."
 						print "\r"
 					else
+						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
 						puts "stake address found but reward not added for #{reward_hash['address']}"
+						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
 					end
 
-					if (!stake.save) #before was (!stake) and erlier (!stake || !stake.save)
-						puts "!!!stake not saved! are there activeStake for epoch #{epochNo}? or maybe owner_stake was found above?"
-						puts "#{stake.errors.message}" if stake
-						puts "processed: #{processed} (offset: #{processed} to examine)"
-						puts ""
+					if (stake && !activeStake.save) #before was (!stake) and erlier (!stake || !stake.save)
+						print "                               #{activeStake.errors.message}"
 					else
 						processed += 1
 					end
