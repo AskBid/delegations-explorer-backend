@@ -1,3 +1,3 @@
 class PoolOwner < ApplicationRecord
-	belong_to :pool
+	belongs_to :pool
 end

@@ -83,6 +83,8 @@ task :getPools => :environment do #per epochNo (as argument)
 		puts "processing #{obj.count} stakePools offset from the #{count}th stakePool ..."
 		puts "total made so far: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
 		processed += obj.count
+		max = 0
+		ownermax = ''
 
 		obj.each.with_index do |pool_hash, i|
 			print "pools processed: #{count + i + 1}"
@@ -98,7 +100,9 @@ task :getPools => :environment do #per epochNo (as argument)
 				pool_reward_address = PoolRewardAddress.find_or_create_by(address: pool_hash['rewardAddress'])
 				pool_reward_address.pool_id = pool.id
 				pool_reward_address.save
-				puts pool_hash['owners']['hash']
+
+				createOwners(pool_hash['owners'], pool.id)
+
 				stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
 				if !stake.persisted?
 					puts "!!!#{stake.address} not saved!" if !stake.save
@@ -111,6 +115,18 @@ task :getPools => :environment do #per epochNo (as argument)
 	end
 	puts ""
 	puts "total made: #{processed} / #{aggregate_count} = #{((processed.to_f / aggregate_count.to_f)*100).to_i}%"
+end
+
+
+
+def createOwners(owners_array, pool_id)
+	# sometimes the pool_reward_address is not the one it says to be. it is actually a BECH32 address (`stake` prefix)
+	# that is saved as e1/hash address between the pool_owners hashes. So when you have a reward that cannot find any stake
+	# you can convert that address in e1/hash, look it up between the pool_owners than you know which pool it belongs to. 
+	# this happens because you can specify a pool_reward_address that is different to your actual reward_address and comes from a wallet that may not be delegated
+	owners_array.each do |hash_|
+		pra = PoolOwner.find_or_create_by(hashid: hash_['hash'], pool_id: pool_id)
+	end
 end
 
 
