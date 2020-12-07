@@ -70,7 +70,7 @@ task :getPools => :environment do #per epochNo (as argument)
 
 		until success do
 			begin
-				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { id hash pledge margin rewardAddress updatedIn { block { epochNo }} url }}")
+				obj = query_graphql("{ stakePools(limit: #{step}, order_by: {id: asc}, offset: #{count}) { id hash pledge margin rewardAddress updatedIn { block { epochNo }} url owners{hash}}}")
 				success = true
 			rescue
 				puts 'there was an error during query_graphql().'
@@ -98,6 +98,7 @@ task :getPools => :environment do #per epochNo (as argument)
 				pool_reward_address = PoolRewardAddress.find_or_create_by(address: pool_hash['rewardAddress'])
 				pool_reward_address.pool_id = pool.id
 				pool_reward_address.save
+				puts pool_hash['owners']['hash']
 				stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
 				if !stake.persisted?
 					puts "!!!#{stake.address} not saved!" if !stake.save
