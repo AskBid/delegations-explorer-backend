@@ -133,7 +133,7 @@ end
 
 task :getTickers => :environment do
 	Pool.all.each do |pool|
-		if !pool.ticker
+		if !pool.ticker || pool.ticker.legth > 5
 			ticker = read_pool_url_json(pool.url, pool.hashid)
 			pool.ticker = ticker if ticker
 			pool.save
