@@ -397,3 +397,16 @@ def read_pool_url_json(url, hashid)
 		return false
 	end
 end
+
+
+
+def bech32(hashid)
+	attempt = 0
+	begin
+		resp = Net::HTTP.get_response(URI.parse("#{ENV['LOCALTUNNEL_URL']}/#{hashid}"))
+		data = resp.body
+		return JSON.parse(data['bech32'])
+	rescue
+		return false
+	end
+end
