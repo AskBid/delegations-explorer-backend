@@ -134,8 +134,7 @@ end
 task :getTickers => :environment do
 	Pool.all.each do |pool|
 		if !pool.ticker
-			ticker = read_ticker_from_adapoolsDOTorg(pool.hashid)
-			# ticker = read_pool_url_json(pool.url)
+			ticker = read_pool_url_json(pool.url, pool.hashid)
 			pool.ticker = ticker if ticker
 			pool.save
 			puts pool.ticker
@@ -376,17 +375,23 @@ end
 
 
 
-def read_pool_url_json(url)
+def read_pool_url_json(url, hashid)
+	attempt = 0
 	begin
 		resp = Net::HTTP.get_response(URI.parse(url))
 		data = resp.body
 		begin 
 			return JSON.parse(data)
 		rescue
-			puts "this url:                   #{url}"
-			url = "#{data.split('<a href="')[1].split('">')[0]}"
-			puts "was modified into this url: #{url}"
-			read_pool_url(url)
+			attempt += 1
+			if attempt < 1
+				puts "                  this url: #{url}"
+				url = "#{data.split('<a href="')[1].split('">')[0]}"
+				puts "was modified into this url: #{url}"
+				read_pool_url_json(url)
+			else
+				read_ticker_from_adapoolsDOTorg(hashid)
+			end
 		end
 	rescue
 		return false
