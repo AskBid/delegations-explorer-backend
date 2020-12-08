@@ -125,6 +125,7 @@ def createOwners(owners_array, pool_id)
 	# you can convert that address in e1/hash, look it up between the pool_owners than you know which pool it belongs to. 
 	# this happens because you can specify a pool_reward_address that is different to your actual reward_address and comes from a wallet that may not be delegated
 	owners_array.each do |hash_|
+		# bech32(hash_['hash'])['bech32']
 		pra = PoolOwner.find_or_create_by(hashid: hash_['hash'], pool_id: pool_id)
 	end
 end
@@ -133,14 +134,67 @@ end
 
 task :getTickers => :environment do
 	Pool.all.each do |pool|
-		if !pool.ticker || pool.ticker.legth > 5
-			ticker = read_pool_url_json(pool.url, pool.hashid)
-			pool.ticker = ticker if ticker
-			pool.save
-			puts pool.ticker
+		if !pool.ticker || pool.ticker.length > 5
+
+			puts " ----------------- Ticker read was: #{pool.ticker}"
+			if pool.url
+				ticker = read_pool_url_json(pool.url, pool.hashid)
+				 
+				if ticker && (ticker.length < 7)
+					pool.ticker = ticker
+					pool.save
+					puts pool.ticker
+				else
+					puts "no valid ticker found: #{ticker}"
+					puts pool.poolid
+				end
+			else
+				if !pool.ticker
+					pool.ticker = pool.hashid.slice(0,6)
+					pool.save
+				else
+					puts "ticker was left as: #{pool.ticker}"
+				end
+			end
+			puts '---------------------------------------------'
 		else
-			puts "`#{pool.ticker}"
+			puts "``#{pool.ticker}"
 		end
+	end
+end
+
+
+
+def read_ticker_from_adapoolsDOTorg(hashid)
+	puts ' >>>>>>>>>>>>>>>>> INSIDE read_ticker_from_adapoolsDOTorg'
+	begin
+		resp = Net::HTTP.get_response(URI.parse("https://adapools.org/pool/#{hashid}"))
+		data = resp.body
+		res = data.split("data-id=\"#{hashid}\"")[1].split(']')[0].split('[')[1]
+		if res.length > 2 && res.length < 6
+			return res
+		else 
+			return hashid.slice(0,6)
+		end
+	rescue
+		return hashid.slice(0,6)
+	end
+end
+
+
+
+def read_pool_url_json(url, hashid)
+	attempt = 0
+	print ' >>>>>>>>>>>>>>>>> INSIDE read_pool_url_json :: '
+	begin
+		puts url
+		resp = Net::HTTP.get_response(URI.parse(url))
+		data = resp.body
+		json = JSON.parse(data)
+		return json['ticker']
+	rescue
+		puts ' >>>>>>>>>>>>>>>>> failed! ...'
+		read_ticker_from_adapoolsDOTorg(hashid)
 	end
 end
 
@@ -357,55 +411,12 @@ end
 
 
 
-def read_ticker_from_adapoolsDOTorg(hashid)
-	begin
-		resp = Net::HTTP.get_response(URI.parse("https://adapools.org/pool/#{hashid}"))
-		data = resp.body
-		puts "https://adapools.org/pool/#{hashid}"
-		res = data.split("data-id=\"#{hashid}\"")[1].split(']')[0].split('[')[1]
-		if res.length > 2 && res.length < 6
-			return res
-		else 
-			return hashid.slice(0,6)
-		end
-	rescue
-		return hashid.slice(0,6)
-	end
-end
-
-
-
-def read_pool_url_json(url, hashid)
-	attempt = 0
-	begin
-		resp = Net::HTTP.get_response(URI.parse(url))
-		data = resp.body
-		begin 
-			return JSON.parse(data)
-		rescue
-			attempt += 1
-			if attempt < 1
-				puts "                  this url: #{url}"
-				url = "#{data.split('<a href="')[1].split('">')[0]}"
-				puts "was modified into this url: #{url}"
-				read_pool_url_json(url)
-			else
-				read_ticker_from_adapoolsDOTorg(hashid)
-			end
-		end
-	rescue
-		return false
-	end
-end
-
-
-
 def bech32(hashid)
 	attempt = 0
 	begin
 		resp = Net::HTTP.get_response(URI.parse("#{ENV['LOCALTUNNEL_URL']}/#{hashid}"))
 		data = resp.body
-		return JSON.parse(data['bech32'])
+		return JSON.parse(data)
 	rescue
 		return false
 	end
