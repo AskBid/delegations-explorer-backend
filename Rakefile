@@ -153,7 +153,7 @@ task :getTickers => :environment do
 					pool.ticker = pool.hashid.slice(0,6)
 					pool.save
 				else
-					puts "ticker was left as: #{pool.ticker}"
+					puts "``#{pool.ticker}"
 				end
 			end
 			puts '---------------------------------------------'
