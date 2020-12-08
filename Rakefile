@@ -358,14 +358,15 @@ def look_for_lost_stake(reward_hash)
 		if pool_reward_address.save
 			puts "pool_reward_address.save succesful!"
 		end
-		puts "if found add #{reward_hash['address']} to stakes and create ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']} and reward #{reward_hash['amount']}"
+		puts "now creating stake and activeStake relative to pool_reward_address for epoch #{reward_hash['earnedIn']['number']} and pool #{owner.pool.ticker}"
 		stake = Stake.create(address: reward_hash['address'])
-		activeStake = ActiveStake.create(epochno: reward_hash['earnedIn']['number'], amount: reward_hash['amount'], pool_id: owner.pool.id, stake_id: stake.id)
+		activeStake = ActiveStake.create(epochno: reward_hash['earnedIn']['number'], rewards: reward_hash['amount'], pool_id: owner.pool.id, stake_id: stake.id)
 		if !stake || !activeStake 
 			puts "stake or activeStake didn't save"
 		else
 			puts "stake and activeStake .save succesful!"
 		end
+		activeStake
 	else
 		puts "Otherwise: Alert that No Stake address was found."
 		nil
