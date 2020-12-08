@@ -292,15 +292,6 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
-
-					if !stake
-						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
-						puts " #{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address #{reward_hash['address']} in local database"
-						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
-						puts ""
-					else
-						print "goint to add rewards for the #{count + i + 1}th address, "
-					end
 					
 					if stake
 						activeStake = ActiveStake.find_or_create_by(epochno: reward_hash['earnedIn']['number'], stake_id: stake.id)
@@ -309,12 +300,20 @@ task :getRewards => :environment do #per epochNo (as argument)
 							pool = Pool.find_by(poolid: reward_hash['stakePool']['id'])
 							activeStake.pool_id = pool.id
 						end
+						print "goint to add rewards for the #{count + i + 1}th address, "
 						print "rewards added."
 						print "\r"
 					else
-						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
-						puts "stake address found but reward not added for #{reward_hash['address']}"
-						puts "> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >> ! > ! >"
+						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+						puts "#{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address #{reward_hash['address']} in local database"
+						
+						puts "transorm #{reward_hash['address']} into hash"
+						puts "look it up in PoolOwners addresses"
+						puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
+						puts "if found add #{reward_hash['address']} to stakes and to ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']}"
+
+						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+						puts ""
 					end
 
 					if (stake && !activeStake.save) #before was (!stake) and erlier (!stake || !stake.save)
