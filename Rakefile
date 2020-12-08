@@ -304,7 +304,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 						print "rewards added."
 						print "\r"
 					else
-						puts ""
+						puts "processed: #{processed}"
 						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
 						puts "An ActiveStake.Reward Earned-In epoch #{reward_hash['earnedIn']['number']} relative to Pool #{reward_hash['stakePool']['id']} haven't found the Stake address #{reward_hash['address']} in the local database."
@@ -338,10 +338,15 @@ end
 
 def look_for_lost_stake(reward_hash)
 	puts "transorm #{reward_hash['address']} into hash"
+	hash_addr = bech32(reward_hash['address'])
 	puts "look it up in PoolOwners addresses"
-	puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
-	puts "if found add #{reward_hash['address']} to stakes and to ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']}"
-	puts "Otherwise: Alert that No Stake address was found."
+	owner = PoolOwner.find_by(hashid: hash_addr)
+	if owner
+		puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
+		puts "if found add #{reward_hash['address']} to stakes and to ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']}"
+	else
+		puts "Otherwise: Alert that No Stake address was found."
+	end
 end
 
 
