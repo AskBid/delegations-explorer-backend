@@ -97,6 +97,7 @@ task :getPools => :environment do #per epochNo (as argument)
 			pool.url = pool_hash['url']
 			if pool.save
 				#this is necessary as pool_reward_address addresses are not always in active_stakes
+				#a pool_reward_address will also be a stake, but not all stake will be pool_reward_address
 				pool_reward_address = PoolRewardAddress.find_or_create_by(address: pool_hash['rewardAddress'])
 				pool_reward_address.pool_id = pool.id
 				pool_reward_address.save
@@ -135,8 +136,8 @@ end
 task :getTickers => :environment do
 	Pool.all.each do |pool|
 		if !pool.ticker || pool.ticker.length > 5
-
-			puts " ----------------- Ticker read was: #{pool.ticker}"
+			puts ''
+			puts " ----------------- Ticker read in local DB was: #{pool.ticker}"
 			if pool.url
 				ticker = read_pool_url_json(pool.url, pool.hashid)
 				 
@@ -153,12 +154,13 @@ task :getTickers => :environment do
 					pool.ticker = pool.hashid.slice(0,6)
 					pool.save
 				else
-					puts "``#{pool.ticker}"
+					print "``#{pool.ticker}"
 				end
 			end
 			puts '---------------------------------------------'
+			puts ''
 		else
-			puts "``#{pool.ticker}"
+			print "``#{pool.ticker}"
 		end
 	end
 end
@@ -248,6 +250,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 			count += step
 		end
 		puts "total made: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
+		puts "errors: #{errors} (activeStakes not saved)"
 		finish = Time.now
 		puts "time to process: #{((finish - start)/60).to_i} minutes to complete epoch #{arg}"
 	end
@@ -265,6 +268,8 @@ task :getRewards => :environment do #per epochNo (as argument)
 	end
 	args = [last_epoch()] if args.empty?
 
+	errors = 0
+
 	args.each do |arg|
 		start = Time.now
 		puts "::::::::::::::::::::::::::::::::::::::::::"
@@ -279,7 +284,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 			until count > (aggregate_count - mod) do
 
-				obj = query_graphql("{rewards(limit: #{step},order_by: {address: {_eq: \"stake\"}},offset: #{count},where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}){ address earnedIn { number } amount stakePool{id}}}")
+				obj = query_graphql("{rewards(limit: #{step}, order_by: {stakePool: {id: asc}},offset: #{count},where: {earnedIn: {blocks: {epoch: {number: {_eq: #{epochNo}}}}}}){ address earnedIn { number } amount stakePool{id}}}")
 
 				obj = obj['rewards']
 				if obj.empty?
@@ -292,7 +297,8 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 				obj.each.with_index do |reward_hash, i|
 					stake = Stake.find_by(address: reward_hash['address'])
-					
+					activeStake = nil
+
 					if stake
 						activeStake = ActiveStake.find_or_create_by(epochno: reward_hash['earnedIn']['number'], stake_id: stake.id)
 						activeStake.rewards = reward_hash['amount']
@@ -304,12 +310,13 @@ task :getRewards => :environment do #per epochNo (as argument)
 						print "rewards added."
 						print "\r"
 					else
+						puts ""
 						puts "processed: #{processed}"
 						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
 						puts "An ActiveStake.Reward Earned-In epoch #{reward_hash['earnedIn']['number']} relative to Pool #{reward_hash['stakePool']['id']} haven't found the Stake address #{reward_hash['address']} in the local database."
 
-						look_for_lost_stake(reward_hash)
+						activeStake = look_for_lost_stake(reward_hash)
 
 						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 						puts ""
@@ -317,6 +324,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 
 					if (stake && !activeStake.save) #before was (!stake) and erlier (!stake || !stake.save)
 						print "                               #{activeStake.errors.message}"
+						errors += 1
 					else
 						processed += 1
 					end
@@ -331,21 +339,25 @@ task :getRewards => :environment do #per epochNo (as argument)
 		end
 		finish = Time.now
 		puts "time to process: #{((finish - start)/60).to_i} minutes to complete epoch #{arg}"
+		puts "errors: #{errors}"
 	end
 end
 
 
 
 def look_for_lost_stake(reward_hash)
-	puts "transorm #{reward_hash['address']} into hash"
+	puts "transorm #{reward_hash['address']} into hash..."
 	hash_addr = bech32(reward_hash['address'])
+	puts "#{hash_addr}"
 	puts "look it up in PoolOwners addresses"
+	binding.pry
 	owner = PoolOwner.find_by(hashid: hash_addr)
 	if owner
 		puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
-		puts "if found add #{reward_hash['address']} to stakes and to ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']}"
+		puts "if found add #{reward_hash['address']} to stakes and create ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']} and reward #{reward_hash['amount']}"
 	else
 		puts "Otherwise: Alert that No Stake address was found."
+		nil
 	end
 end
 
