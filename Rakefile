@@ -349,7 +349,6 @@ def look_for_lost_stake(reward_hash)
 	hash_addr = bech32(reward_hash['address'])
 	puts "#{hash_addr['bech32']}"
 	puts "look it up in PoolOwners addresses"
-	binding.pry
 	owner = PoolOwner.find_by(hashid: hash_addr['bech32'])
 	if owner
 		puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
