@@ -300,7 +300,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 							pool = Pool.find_by(poolid: reward_hash['stakePool']['id'])
 							activeStake.pool_id = pool.id
 						end
-						print "goint to add rewards for the #{count + i + 1}th address, "
+						print "going to add rewards for the #{count + i + 1}th address, "
 						print "rewards added."
 						print "\r"
 					else
