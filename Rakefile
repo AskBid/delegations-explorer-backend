@@ -305,7 +305,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 						print "\r"
 					else
 						puts "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-						puts "#{reward_hash['amount']} in epoch #{reward_hash['earnedIn']['number']} haven't found address #{reward_hash['address']} in local database"
+						puts "An ActiveStake.Reward Earned-In epoch #{reward_hash['earnedIn']['number']} relative to Pool #{reward_hash['stakePool']['id']} haven't found the Stake address #{reward_hash['address']} in the local database."
 
 						puts "transorm #{reward_hash['address']} into hash"
 						puts "look it up in PoolOwners addresses"
