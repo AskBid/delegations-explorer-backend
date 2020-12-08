@@ -235,8 +235,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 			errors = 0
 
 			obj.each.with_index do |stake_hash, i|
-				stake = Stake.find_or_initialize_by(address: stake_hash['address'])
-				stake.save
+				stake = Stake.find_or_create_by(address: stake_hash['address'])
 				print "stakes proccessed: #{count + i + 1}"
 				print "\r"
 				pool = Pool.find_or_create_by(poolid: stake_hash['registeredWith']['id'])			
@@ -348,13 +347,25 @@ end
 def look_for_lost_stake(reward_hash)
 	puts "transorm #{reward_hash['address']} into hash..."
 	hash_addr = bech32(reward_hash['address'])
-	puts "#{hash_addr}"
+	puts "#{hash_addr['bech32']}"
 	puts "look it up in PoolOwners addresses"
 	binding.pry
-	owner = PoolOwner.find_by(hashid: hash_addr)
+	owner = PoolOwner.find_by(hashid: hash_addr['bech32'])
 	if owner
 		puts "if found add #{reward_hash['address']} to the PoolOwner's Pool's PoolRewardAddress"
+		pool_reward_address = PoolRewardAddress.find_or_create_by(address: reward_hash['address'])
+		pool_reward_address.pool_id = owner.pool.id
+		if pool_reward_address.save
+			puts "pool_reward_address.save succesful!"
+		end
 		puts "if found add #{reward_hash['address']} to stakes and create ActiveStake for #{epochNo} with poolid: #{reward_hash['stakePool']['id']} and reward #{reward_hash['amount']}"
+		stake = Stake.create(address: reward_hash['address'])
+		activeStake = ActiveStake.create(epochno: reward_hash['earnedIn']['number'], amount: reward_hash['amount'], pool_id: owner.pool.id, stake_id: stake.id)
+		if !stake || !activeStake 
+			puts "stake or activeStake didn't save"
+		else
+			puts "stake and activeStake .save succesful!"
+		end
 	else
 		puts "Otherwise: Alert that No Stake address was found."
 		nil
