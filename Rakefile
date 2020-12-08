@@ -9,7 +9,7 @@ require 'net/http'
 require 'net/https'
 
 
-task :epochStartProcedure do
+task :epochProcedure do
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 
@@ -124,7 +124,7 @@ def createOwners(owners_array, pool_id)
 	# sometimes the pool_reward_address is not the one it says to be. it is actually a BECH32 address (`stake` prefix)
 	# that is saved as e1/hash address between the pool_owners hashes. So when you have a reward that cannot find any stake
 	# you can convert that address in e1/hash, look it up between the pool_owners than you know which pool it belongs to. 
-	# this happens because you can specify a pool_reward_address that is different to your actual reward_address and comes from a wallet that may not be delegated
+	# this happens because you can specify a pool_reward_address that is different to your actual reward_address and comes from a wallet that may not be delegated and has 0 balance, is jsut were the pool's reward are sent to. I think there is only one reward address per pool.
 	owners_array.each do |hash_|
 		# bech32(hash_['hash'])['bech32']
 		pra = PoolOwner.find_or_create_by(hashid: hash_['hash'], pool_id: pool_id)
