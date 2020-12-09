@@ -205,14 +205,15 @@ end
 task :getStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
-	count = 0
+	offset = 0
 	if args[-1].include?('offset:')
-		count = args[-1].gsub('offset:', '').to_i
+		offset = args[-1].gsub('offset:', '').to_i
 		args = args.slice(0, args.length - 1 )
 	end
 	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
+		count = 0 + offset
 		start = Time.now
 		puts "::::::::::::::::::::::::::::::::::::::::::"
 		epochNo = arg
@@ -260,9 +261,9 @@ end
 task :getRewards => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
-	count = 0
+	offset = 0
 	if args[-1].include?('offset:')
-		count = args[-1].gsub('offset:', '').to_i
+		offset = args[-1].gsub('offset:', '').to_i
 		args = args.slice(0, args.length - 1 )
 	end
 	args = [last_epoch()] if args.empty?
@@ -270,6 +271,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 	errors = 0
 
 	args.each do |arg|
+		count = 0 + offset
 		start = Time.now
 		puts "::::::::::::::::::::::::::::::::::::::::::"
 		epochNo = arg
