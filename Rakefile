@@ -247,6 +247,7 @@ task :getStakes => :environment do #per epochNo (as argument)
 				end
 			end
 			puts ''
+			puts "errors so far: #{errors}"
 			count += step
 		end
 		puts "total made: #{processed} / #{stakeTotNo} = #{((processed.to_f / stakeTotNo.to_f)*100).to_i}%"
@@ -331,6 +332,7 @@ task :getRewards => :environment do #per epochNo (as argument)
 					end
 				end
 				puts ''
+				puts "errors so far: #{errors}"
 				count += step
 			end
 			puts ""
