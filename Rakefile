@@ -13,13 +13,13 @@ task :epochProcedure do
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 
-	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-	puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
-	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-	start0 = Time.now
-	Rake::Task[:getPools].invoke()
-	finish0 = Time.now
-	total = ((finish0 - start0)/60).to_i
+	# puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	# puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
+	# puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	# start0 = Time.now
+	# Rake::Task[:getPools].invoke()
+	# finish0 = Time.now
+	# total = ((finish0 - start0)/60).to_i
 
 	args.each do |arg|
 		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
@@ -439,8 +439,9 @@ def query_graphql(query)
 		puts ""
 		JSON.parse(response.body)['data']
 	rescue
-		attempt += 1
-		puts "retrying #query_graphql because it failed #{attempt} times"
+		attempts += 1
+		puts "retrying #query_graphql in 30sec because it failed #{attempts} times"
+		sleep(30)
 		query_graphql(query)
 	end
 end
