@@ -1,10 +1,9 @@
 class UsersController < ApplicationController
   def create
   	user = User.find_by(username: user_params[:username])
-	  # binding.pry
   	if user && !user.authenticate(user_params[:password])
   		user = nil
-  	elsif !user
+  	elsif !user && !user_params[:password].empty?
 	  	user = User.create(params.permit(:username, :password))
 	  end
 	  render json: UserSerializer.new(user).to_serialized_json
