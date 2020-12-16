@@ -5,14 +5,15 @@ class UserSerializer
 
   def to_serialized_json
     options ={
-      include: {
-        followed_pools:{
-          only: [:ticker]
-        },
-        active_stakes:{
-          only: [:address]
-        }
-      }
+      only: [:username]
+      # include: {
+      #   followed_pools:{
+      #     only: [:ticker]
+      #   },
+      #   active_stakes:{
+      #     only: [:address]
+      #   }
+      # }
     }
 
     @user.to_json(options)
