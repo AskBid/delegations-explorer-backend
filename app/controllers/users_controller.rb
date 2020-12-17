@@ -2,10 +2,10 @@ class UsersController < ApplicationController
   skip_before_action :authorized
 
   def create
-    binding.pry
   	user = User.find_by(username: user_params[:username])
   	if user && !user.authenticate(user_params[:password])
-  		user.errors.messages[:password] = "wrong password!"
+  		user.errors.messages[:password] = "Wrong password."
+      user.errors.messages[:username] = "Username exist. (#{user.username})"
   	elsif !user
 	  	user = User.create(params.permit(:username, :password))
 	  end
