@@ -5,12 +5,12 @@ class UsersController < ApplicationController
     binding.pry
   	user = User.find_by(username: user_params[:username])
   	if user && !user.authenticate(user_params[:password])
-  		user = nil
-  	elsif !user && !user_params[:password].empty?
+  		user.errors.messages[:password] = "wrong password!"
+  	elsif !user
 	  	user = User.create(params.permit(:username, :password))
 	  end
     @token = encode_token(user_id: user.id) if user       
-    render json: { user: user, jwt: @token }, status: :created
+    render json: { user: user, jwt: @token, errors: user.errors.messages }, status: :created
   end
 
   private
