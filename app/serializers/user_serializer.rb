@@ -3,19 +3,11 @@ class UserSerializer
     @user=user
   end
 
-  def to_serialized_json
+  def to_serialized_json(**additional_hash)
     options ={
-      only: [:username]
-      # include: {
-      #   followed_pools:{
-      #     only: [:ticker]
-      #   },
-      #   active_stakes:{
-      #     only: [:address]
-      #   }
-      # }
+      only: [:username, :id]
     }
 
-    @user.to_json(options)
+    @user.as_json(options).merge(additional_hash)
   end
 end
