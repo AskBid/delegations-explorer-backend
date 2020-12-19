@@ -2,8 +2,8 @@ class SessionsController < ApplicationController
   skip_before_action :authorized
 
   def restore
-    binding.pry
-    decoded_token
+    @user = current_user
+    render_user
   end
 
   private
