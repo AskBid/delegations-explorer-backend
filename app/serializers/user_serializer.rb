@@ -15,7 +15,7 @@ class UserSerializer
     options ={
       include: {
 		    stakes: {only: [:address, :species]},
-        followed_pools: [:ticker]
+        followed_pools: {only: :ticker}
 		  }, except: [:updated_at, :created_at, :password_digest]
     }
 
