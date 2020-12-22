@@ -37,6 +37,6 @@ class ApplicationController < ActionController::API
 
   def render_user
     @token = encode_token(user_id: @user.id)
-    render json: UserSerializer.new(@user).to_serialized_json(token: @token, errors: @user.errors.messages)
+    render json: UserSerializer.new(@user).to_login_json(token: @token, errors: @user.errors.messages)
   end
 end
