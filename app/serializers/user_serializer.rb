@@ -14,10 +14,15 @@ class UserSerializer
   def to_serialized_json()
     options ={
       include: {
-		    stakes: {only: [:address, :species]},
+		    stakes: {only: [:address]},
+        active_stakes: {
+          include: {pool: {only: :ticker}}, 
+          only: [:amount, :rewards, :epochno]
+        }, 
         followed_pools: {only: :ticker}
 		  }, except: [:updated_at, :created_at, :password_digest]
     }
+    binding.pry
 
     @user.as_json(options)
   end
