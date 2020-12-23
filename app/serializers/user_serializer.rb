@@ -22,7 +22,6 @@ class UserSerializer
         followed_pools: {only: :ticker}
 		  }, except: [:updated_at, :created_at, :password_digest]
     }
-    binding.pry
 
     @user.as_json(options)
   end

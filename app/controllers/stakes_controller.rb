@@ -20,7 +20,11 @@ class StakesController < ApplicationController
       @stake = Stake.find_by(address: stake_params[:stake])
       @user.stakes << @stake
     end
-    render json: UserSerializer.new(@user).to_serialized_json
+    if @stake
+      render json: {success: true}
+    else
+      render json: {success: false}
+    end
   end
 
   private

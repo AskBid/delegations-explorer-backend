@@ -10,7 +10,7 @@ class PoolsController < ApplicationController
       @stake = Stake.find_by(address: stake_params[:stake])
       @user.followed_pools << @pool
     end
-    render json: UserSerializer.new(@user).to_serialized_json
+    render json: {success: true}
   end
 
   private

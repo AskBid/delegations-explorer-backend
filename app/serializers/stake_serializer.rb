@@ -5,7 +5,11 @@ class StakeSerializer
 
   def to_serialized_json()
     options ={
-      only: [:address, :id]
+        include: {
+          pool: {only: :ticker},
+          stake: {only: :address}
+        }, 
+        only: [:amount, :rewards, :epochno]
     }
 
     @stake.as_json(options)
