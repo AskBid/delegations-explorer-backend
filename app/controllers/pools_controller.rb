@@ -1,6 +1,12 @@
 class PoolsController < ApplicationController
   skip_before_action :authorized
 
+  def index
+    @user = current_user
+    @pools = @user.followed_pools if @user
+    render json: @pools, only: [:ticker]
+  end
+
   def create
     @user = current_user
     if pool_params[:pool].empty?
