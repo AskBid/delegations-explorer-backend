@@ -6,8 +6,8 @@ class ActiveStakeSerializer
   def to_serialized_json()
     options ={
         include: {
-          pool: {only: :ticker},
-          stake: {only: :address}
+          pool: {only: [:ticker, :id]},
+          stake: {only: [:address, :id]}
         }, 
         only: [:amount, :rewards, :epochno]
     }

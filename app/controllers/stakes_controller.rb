@@ -27,6 +27,9 @@ class StakesController < ApplicationController
     end
   end
 
+  def delete
+  end
+
   private
 
   def stake_params
