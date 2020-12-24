@@ -2,8 +2,8 @@ class User < ApplicationRecord
 	has_many :user_stakes
 	has_many :stakes, through: :user_stakes
 	has_many :follows
-	has_many :pools, through: :active_stakes
 	has_many :active_stakes, through: :stakes
+	has_many :pools, through: :active_stakes
 	has_many :followed_pools, through: :follows, source: :pool
 	
 	has_secure_password
