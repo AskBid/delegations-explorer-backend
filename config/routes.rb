@@ -1,7 +1,7 @@
 Rails.application.routes.draw do
   resources :users, only: [:create] do
-  	resources :stakes, only: [:index, :create, :delete]
-  	resources :pools, only: [:create, :index, :delete]
+  	resources :stakes, only: [:index, :create, :destroy]
+  	resources :pools, only: [:create, :index, :destroy]
   	resources :active_stake, only: [:index]
   end
   get 'login', to: 'sessions#restore'
