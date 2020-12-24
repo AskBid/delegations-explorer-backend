@@ -4,7 +4,7 @@ class PoolsController < ApplicationController
   def index
     @user = current_user
     @pools = @user.followed_pools if @user
-    render json: @pools, only: [:ticker]
+    render json: @pools, only: [:ticker, :id]
   end
 
   def create
@@ -19,9 +19,18 @@ class PoolsController < ApplicationController
     render json: {success: true}
   end
 
+  def destroy
+    @user = current_user
+    if @user
+      @user.followed_pools.delete(params[:id])
+      @user.save
+      render json: {success: true}
+    end
+  end
+
   private
 
   def pool_params
-    params.permit(:user_id, :pool)
+    params.permit(:user_id, :pool, :id)
   end
 end

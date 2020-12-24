@@ -27,7 +27,12 @@ class StakesController < ApplicationController
     end
   end
 
-  def delete
+  def destroy
+    @user = current_user
+    if @user
+      @user.stakes.delete(params[:id])
+      render json: {success: true}
+    end
   end
 
   private
