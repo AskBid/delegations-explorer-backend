@@ -4,7 +4,7 @@ class PoolsController < ApplicationController
   def index
     @user = current_user
     @pools = @user.followed_pools if @user
-    render json: @pools, only: [:ticker, :id]
+    render json: @pools, only: [:ticker, :id, :poolid]
   end
 
   def create
