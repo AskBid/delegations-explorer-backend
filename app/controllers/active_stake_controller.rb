@@ -4,6 +4,6 @@ class ActiveStakeController < ApplicationController
   	@user = current_user
   	@stakes = @user.active_stakes.by_epochno(epochno)
 
-  	render json: StakeSerializer.new(@stakes).to_serialized_json
+  	render json: ActiveStakeSerializer.new(@stakes).to_serialized_json
   end
 end

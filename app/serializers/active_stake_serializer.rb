@@ -1,4 +1,4 @@
-class StakeSerializer
+class ActiveStakeSerializer
   def initialize(stake)
     @stake=stake
   end
