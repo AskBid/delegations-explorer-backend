@@ -5,15 +5,15 @@ class Pool < ApplicationRecord
 	has_many :follows
 	has_many :users, through: :follow
 
-	def reward_ratio(epoch = ActiveStake.maximum('epochno')) {
-		as = self.active_stakes.by_epoch(epoch)
+	def reward_ratio(epoch = ActiveStake.maximum('epochno'))
+		as = self.active_stakes.by_epochno(epoch)
 		values = as.map do |as|
 			if as.rewards.to_i != 0 && as.rewards
 				as.amount.to_i / as.rewards.to_i
 			end
 		end
-		modes(values)
-	}
+		modes(values).first
+	end
 
 	def self.empty_all_tickers
 		self.all.each do |pool|
