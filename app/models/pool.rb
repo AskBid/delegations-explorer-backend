@@ -12,7 +12,8 @@ class Pool < ApplicationRecord
 				as.amount.to_i / as.rewards.to_i
 			end
 		end
-		modes(values).first
+		avg = modes(values)
+		avg[0] if avg
 	end
 
 	def self.empty_all_tickers

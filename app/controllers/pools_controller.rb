@@ -18,12 +18,17 @@ class PoolsController < ApplicationController
 
   def create
     @user = current_user
-    if pool_params[:ticker].empty?
+    @ticker = pool_params[:ticker]
+    if @ticker.empty?
       @pool = Pool.all[rand(Pool.count)]
       @user.followed_pools << @pool
     else
-      @pool = Pool.find_by(ticker: pool_params[:ticker])
-      @user.followed_pools << @pool if @pool
+      if @ticker.length < 5
+        @pool = Pool.find_by(ticker: @ticker)
+      elsif @ticker.include?('pool')
+        @pool = Pool.find_by(poolid: @ticker)
+      end
+      @user.followed_pools << @pool if @pool  
     end
     render json: {message: 'Pool POST action completed.'}
   end
