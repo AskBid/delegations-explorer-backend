@@ -4,8 +4,12 @@ class PoolsController < ApplicationController
   def index
     if params[:user_id]
       @user = current_user
-      @pools = @user.followed_pools if @user
-      render json: @pools, only: [:ticker, :id, :poolid]
+      if @user
+        @pools = @user.followed_pools
+        render json: @pools, only: [:ticker, :id, :poolid]
+      else
+        render json: {message: 'no user found.'}
+      end
     else
       @pools = Pool.all
       render json: @pools, only: [:ticker]
@@ -14,14 +18,15 @@ class PoolsController < ApplicationController
 
   def create
     @user = current_user
-    if pool_params[:pool].empty?
+    binding.pry
+    if pool_params[:ticker].empty?
       @pool = Pool.all[rand(Pool.count)]
       @user.followed_pools << @pool
     else
-      @stake = Stake.find_by(address: stake_params[:stake])
-      @user.followed_pools << @pool
+      @pool = Pool.find_by(ticker: pool_params[:ticker])
+      @user.followed_pools << @pool if @pool
     end
-    render json: {success: true}
+    render json: {message: 'Pool POST action completed.'}
   end
 
   def destroy
@@ -36,6 +41,6 @@ class PoolsController < ApplicationController
   private
 
   def pool_params
-    params.permit(:user_id, :pool, :id)
+    params.permit(:user_id, :ticker, :id)
   end
 end

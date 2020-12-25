@@ -8,7 +8,7 @@ class Pool < ApplicationRecord
 	def reward_ratio(epoch = ActiveStake.maximum('epochno'))
 		as = self.active_stakes.by_epochno(epoch)
 		values = as.map do |as|
-			if as.rewards.to_i != 0 && as.rewards
+			if as.rewards.to_i > 0 && as.rewards
 				as.amount.to_i / as.rewards.to_i
 			end
 		end
