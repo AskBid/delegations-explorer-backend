@@ -6,7 +6,7 @@ class PoolsController < ApplicationController
       @user = current_user
       if @user
         @pools = @user.followed_pools
-        render json: @pools, only: [:ticker, :id, :poolid]
+        render json: @pools, only: [:ticker, :id, :poolid], methods: :reward_ratio
       else
         render json: {message: 'no user found.'}
       end
@@ -18,7 +18,6 @@ class PoolsController < ApplicationController
 
   def create
     @user = current_user
-    binding.pry
     if pool_params[:ticker].empty?
       @pool = Pool.all[rand(Pool.count)]
       @user.followed_pools << @pool
