@@ -1,5 +1,7 @@
 # Delegation Explorer Backend
 
+This backend serves [delegations-explorer-frontend](https://github.com/AskBid/delegations-explorer-frontend).
+
 Delegation Explorer Backend queries through Rake tasks a GraphQL API to populate its database.
 The GraphQL API is maintened from a [`cardano-graphql`](https://github.com/input-output-hk/cardano-graphql) node. This is a node that reads the Cardano Blockchain building a postgress database that can be queried through the API.
 A natural development of this repository would be to connect the Rails app directly to a [`cardano-db-sync`](https://github.com/input-output-hk/cardano-db-sync) which maintannes a postgresql database that coudl be the Rails app database itself.
