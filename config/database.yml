@@ -80,8 +80,8 @@ test:
 #
 production:
   <<: *default
-  database: delegations_explorer_production
-  username: delegations_explorer
+  database: delegation_explorer-production
+  username: postgres
   password: <%= ENV['HELLO_WORLD_DATABASE_PASSWORD'] %>
   host: <%= ENV['HELLO_WORLD_DATABASE_HOST'] %>
   port: <%= ENV['HELLO_WORLD_DATABASE_PORT'] %>
