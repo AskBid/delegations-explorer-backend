@@ -91,28 +91,33 @@ task :getPools => :environment do #per epochNo (as argument)
 		obj.each.with_index do |pool_hash, i|
 			print "pools processed: #{count + i + 1}"
 			print "\r"
-			pool = Pool.find_or_initialize_by(poolid: pool_hash['id'])
-			puts "\n> ! > ! > #{pool_hash['url']} :NEW POOL!" if !pool.persisted?
+			if pool_hash
+				pool = Pool.find_or_initialize_by(poolid: pool_hash['id'])
+				puts "\n> ! > ! > #{pool_hash['url']} :NEW POOL!" if !pool.persisted?
 
-			pool.hashid = pool_hash['hash']
-			pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
-			pool.url = pool_hash['url']
-			if pool.save
-				#this is necessary as pool_reward_address addresses are not always in active_stakes
-				#a pool_reward_address will also be a stake, but not all stake will be pool_reward_address
-				pool_reward_address = PoolRewardAddress.find_or_create_by(address: pool_hash['rewardAddress'])
-				pool_reward_address.pool_id = pool.id
-				pool_reward_address.save
+				pool.hashid = pool_hash['hash']
+				pool.updatedIn = pool_hash['updatedIn']['block']['epochNo']
+				pool.url = pool_hash['url']
+				if pool.save
+					#this is necessary as pool_reward_address addresses are not always in active_stakes
+					#a pool_reward_address will also be a stake, but not all stake will be pool_reward_address
+					pool_reward_address = PoolRewardAddress.find_or_create_by(address: pool_hash['rewardAddress'])
+					pool_reward_address.pool_id = pool.id
+					pool_reward_address.save
 
-				createOwners(pool_hash['owners'], pool.id)
+					createOwners(pool_hash['owners'], pool.id)
 
-				stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
-				if !stake.persisted?
-					puts "!!!#{stake.address} not saved!" if !stake.save
-				end				
+					stake = Stake.find_or_initialize_by(address: pool_hash['rewardAddress'])
+					if !stake.persisted?
+						puts "!!!#{stake.address} not saved!" if !stake.save
+					end				
+				else
+					puts "!!!not saved! #{pool_hash['id']}"
+				end
 			else
-				puts "!!!not saved! #{pool_hash['id']}"
+				puts "!!!!!! >=>=>=>=> Pool_hash [#{i}] from the query request was found to be nil, Pool skipped"
 			end
+			
 		end
 		count += step
 	end
@@ -208,9 +213,11 @@ task :getStakes => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 	offset = 0
-	if args[-1].include?('offset:')
-		offset = args[-1].gsub('offset:', '').to_i
-		args = args.slice(0, args.length - 1 )
+	if args.length > 0
+		if args[-1].include?('offset:')
+			offset = args[-1].gsub('offset:', '').to_i
+			args = args.slice(0, args.length - 1 )
+		end
 	end
 	args = [last_epoch()] if args.empty?
 
