@@ -272,9 +272,11 @@ task :getRewards => :environment do #per epochNo (as argument)
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 	offset = 0
-	if args[-1].include?('offset:')
-		offset = args[-1].gsub('offset:', '').to_i
-		args = args.slice(0, args.length - 1 )
+	if args.length > 0
+		if args[-1].include?('offset:')
+			offset = args[-1].gsub('offset:', '').to_i
+			args = args.slice(0, args.length - 1 )
+		end
 	end
 	args = [last_epoch()] if args.empty?
 
