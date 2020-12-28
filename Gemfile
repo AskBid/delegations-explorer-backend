@@ -28,6 +28,9 @@ gem 'bcrypt'
 gem 'fast_jsonapi'
 gem 'jwt'
 
+gem 'figaro'
+
+
 group :development, :test do
 	gem 'rack-cors'
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -36,6 +39,13 @@ group :development, :test do
   # $ rake db:seed:dump
 	gem 'pry'
   gem 'byebug', platforms: [:mri, :mingw, :x64_mingw]
+
+  gem 'capistrano'
+  gem 'capistrano-bundler'
+  gem 'capistrano-passenger', '>= 0.1.1'
+  gem 'capistrano-rails'
+  gem 'capistrano-rvm'
+  gem 'capistrano-figaro-yml', '~> 1.0.2'
 end
 
 group :development do

@@ -27,3 +27,6 @@
 /config/master.key
 /config/local_env.yml
 /vendor/*
+
+# Ignore application configuration
+/config/application.yml
