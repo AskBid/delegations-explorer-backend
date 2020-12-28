@@ -11,7 +11,7 @@ Once the servers for GraphQL API and bech32 Concerter are set up the relative UR
 ```
 IP_CARDANO_GRAPHQL_API_SERVER
 LOCALTUNNEL_URL
-SECRET
+SECRET_KEY_BASE
 ```
 The last variable is relative to JWT token secret which is used for user authentication.
 
