@@ -6,6 +6,7 @@ class PoolsController < ApplicationController
       @user = current_user
       if @user
         @pools = @user.followed_pools
+        Pool.current_epoch = params[:epochno]
         render json: @pools, only: [:ticker, :id, :poolid], methods: :reward_ratio
       else
         render json: {message: 'no user found.'}
