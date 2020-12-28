@@ -13,13 +13,15 @@ task :epochProcedure do
 	ARGV.each { |a| task a.to_sym do ; end }
 	args = ARGV.slice(1,ARGV.length)
 
-	# puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-	# puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
-	# puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-	# start0 = Time.now
-	# Rake::Task[:getPools].invoke()
-	# finish0 = Time.now
-	# total = ((finish0 - start0)/60).to_i
+	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	puts "::::::::::::::::       POOLS scraping       :::::::::::::::::::::"
+	puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+	start0 = Time.now
+	Rake::Task[:getPools].invoke()
+	finish0 = Time.now
+	total = ((finish0 - start0)/60).to_i
+
+	args = [last_epoch()] if args.empty?
 
 	args.each do |arg|
 		puts ":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
@@ -419,7 +421,6 @@ def query_graphql(query)
 		puts "query: #{query}"
 		uri = URI.parse("http://#{ENV['IP_CARDANO_GRAPHQL_API_SERVER']}:3100")
 		request = Net::HTTP::Post.new(uri)
-	  # request.read_timeout = 5
 
 		request.content_type = "application/json"
 		request["Accept"] = "application/json"
