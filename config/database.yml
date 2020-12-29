@@ -81,7 +81,3 @@ test:
 production:
   <<: *default
   database: swan
-  username: postgres
-  password: <%= ENV['HELLO_WORLD_DATABASE_PASSWORD'] %>
-  host: <%= ENV['HELLO_WORLD_DATABASE_HOST'] %>
-  port: <%= ENV['HELLO_WORLD_DATABASE_PORT'] %>
