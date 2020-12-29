@@ -80,7 +80,7 @@ test:
 #
 production:
   <<: *default
-  database: delegation_explorer-production
+  database: swan
   username: postgres
   password: <%= ENV['HELLO_WORLD_DATABASE_PASSWORD'] %>
   host: <%= ENV['HELLO_WORLD_DATABASE_HOST'] %>
