@@ -142,32 +142,36 @@ end
 
 task :getTickers => :environment do
 	Pool.all.each do |pool|
-		if !pool.ticker || pool.ticker.length > 5
-			puts ''
-			puts " ----------------- Ticker read in local DB was: #{pool.ticker}"
-			if pool.url
-				ticker = read_pool_url_json(pool.url, pool.hashid)
-				 
-				if ticker && (ticker.length < 7)
-					pool.ticker = ticker
-					pool.save
-					puts pool.ticker
+		if pool
+			if !pool.ticker || pool.ticker.length > 5
+				puts ''
+				puts " ----------------- Ticker read in local DB was: #{pool.ticker}"
+				if pool.url
+					ticker = read_pool_url_json(pool.url, pool.hashid)
+					 
+					if ticker && (ticker.length < 7)
+						pool.ticker = ticker
+						pool.save
+						puts pool.ticker
+					else
+						puts "no valid ticker found: #{ticker}"
+						puts pool.poolid
+					end
 				else
-					puts "no valid ticker found: #{ticker}"
-					puts pool.poolid
+					if !pool.ticker
+						pool.ticker = pool.hashid.slice(0,6)
+						pool.save
+					else
+						print "``#{pool.ticker}"
+					end
 				end
+				puts '---------------------------------------------'
+				puts ''
 			else
-				if !pool.ticker
-					pool.ticker = pool.hashid.slice(0,6)
-					pool.save
-				else
-					print "``#{pool.ticker}"
-				end
+				print "``#{pool.ticker}"
 			end
-			puts '---------------------------------------------'
-			puts ''
 		else
-			print "``#{pool.ticker}"
+			binding.pry
 		end
 	end
 end
