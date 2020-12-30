@@ -80,4 +80,10 @@ test:
 #
 production:
   <<: *default
-  database: swan
+  host: localhost
+  adapter: postgresql
+  encoding: utf8
+  database: swan_production
+  pool: 5
+  username: <%= ENV['SWAN_DATABASE_USER'] %>
+  password: <%= ENV['SWAN_DATABASE_PASSWORD'] %>
