@@ -159,14 +159,17 @@ task :getTickers => :environment do
 					end
 				else
 					if !pool.ticker
-						pool.ticker = pool.hashid.slice(0,6)
-						pool.save
+						if hashid
+							pool.ticker = pool.hashid.slice(0,6)
+							pool.save
+						end
 					else
 						print "``#{pool.ticker}"
 					end
 				end
 			rescue
-				binding.pry
+				"!!!!! no valid ticker found: #{ticker}"
+				"!!!!! ool.poolid: #{pool.poolid}"
 			end
 			puts '---------------------------------------------'
 			puts ''
@@ -187,10 +190,18 @@ def read_ticker_from_adapoolsDOTorg(hashid)
 		if res.length > 2 && res.length < 6
 			return res
 		else 
-			return hashid.slice(0,6)
+			if hashid
+				return hashid.slice(0,6)
+			else
+				return nil
+			end
 		end
 	rescue
-		return hashid.slice(0,6)
+		if hashid
+				return hashid.slice(0,6)
+		else
+			return nil
+		end
 	end
 end
 
