@@ -142,9 +142,9 @@ end
 
 task :getTickers => :environment do
 	Pool.all.each do |pool|
-		if pool
-			if !pool.ticker || pool.ticker.length > 5
-				puts ''
+		if !pool.ticker || pool.ticker.length > 5
+			puts ''
+			begin
 				puts " ----------------- Ticker read in local DB was: #{pool.ticker}"
 				if pool.url
 					ticker = read_pool_url_json(pool.url, pool.hashid)
@@ -165,13 +165,13 @@ task :getTickers => :environment do
 						print "``#{pool.ticker}"
 					end
 				end
-				puts '---------------------------------------------'
-				puts ''
-			else
-				print "``#{pool.ticker}"
+			rescue
+				binding.pry
 			end
+			puts '---------------------------------------------'
+			puts ''
 		else
-			binding.pry
+			print "``#{pool.ticker}"
 		end
 	end
 end
