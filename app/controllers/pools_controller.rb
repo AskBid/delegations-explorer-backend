@@ -24,7 +24,7 @@ class PoolsController < ApplicationController
       @pool = Pool.all[rand(Pool.count)]
       @user.followed_pools << @pool
     else
-      if @ticker.length < 5
+      if @ticker.length < 6
         @pool = Pool.find_by(ticker: @ticker)
       elsif @ticker.include?('pool')
         @pool = Pool.find_by(poolid: @ticker)
